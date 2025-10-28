@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Map & Daily Log</title>
+    <!-- Load Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better readability of the monospace output */
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .font-mono-custom { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        
+        /* Style the inputs inside the header */
+        #date-input, .count-input {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #1f2937; /* Dark gray text */
+            transition: all 0.2s;
+        }
+        #date-input:focus, .count-input:focus {
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5); /* Indigo focus ring */
+        }
+
+        /* Hide default number input arrows for clean custom buttons */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Styling for the non-editable weekday span */
+        #weekday-display {
+            background-color: white;
+            padding: 4px 8px;
+            border-radius: 0.25rem;
+            color: #4b5563; /* Gray-700 */
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 bg-gray-50">
+    <!-- Header -->
+    <header class="w-full max-w-3xl bg-blue-700 text-white p-6 rounded-t-xl shadow-xl text-center">
+        <h1 class="text-3xl font-extrabold mb-1">Daily Log & Life Map</h1>
+        <!-- Editable Date and Count Inputs -->
+        <div class="flex flex-wrap justify-center space-x-2 space-y-2 sm:space-y-0 text-sm mt-3">
+            
+            <!-- Date Input with Native Picker and Dynamic Weekday -->
+            <div class="flex items-center space-x-1">
+                <span class="font-medium">Date:</span>
+                <!-- Changed to type="date" for native controls -->
+                <input type="date" id="date-input" onchange="updateWeekday()" class="p-1 w-32 text-sm text-gray-800 rounded focus:ring-blue-300 focus:border-blue-300 border-none">
+                <!-- Display for calculated Weekday -->
+                <span id="weekday-display" class="text-sm"></span>
+            </div>
+            
+            <!-- Consecutive Day Input with Custom Buttons -->
+            <div class="flex items-center space-x-1">
+                <span class="font-medium">Day:</span>
+                <div class="flex items-stretch rounded overflow-hidden">
+                    <button onclick="changeCount('consecutive-day-input', -1)" class="px-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition duration-150 font-bold text-base focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-l-md">-</button>
+                    <input type="number" id="consecutive-day-input" placeholder="32" class="p-1 w-10 text-sm text-gray-800 text-center count-input border-y border-gray-300 focus:ring-0 focus:border-gray-300">
+                    <button onclick="changeCount('consecutive-day-input', 1)" class="px-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition duration-150 font-bold text-base focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-r-md">+</button>
+                </div>
+            </div>
+
+            <!-- Accumulated Count Input with Custom Buttons -->
+            <div class="flex items-center space-x-1">
+                <span class="font-medium">Count:</span>
+                <div class="flex items-stretch rounded overflow-hidden">
+                    <button onclick="changeCount('accumulated-count-input', -1)" class="px-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition duration-150 font-bold text-base focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-l-md">-</button>
+                    <input type="number" id="accumulated-count-input" placeholder="55" class="p-1 w-10 text-sm text-gray-800 text-center count-input border-y border-gray-300 focus:ring-0 focus:border-gray-300">
+                    <button onclick="changeCount('accumulated-count-input', 1)" class="px-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition duration-150 font-bold text-base focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-r-md">+</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-3xl p-6 bg-white shadow-xl rounded-b-xl mb-8">
+        
+        <!-- Section 1: Story, Emotion, Gratitude, Reflection -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">✨ Story, Emotion, Gratitude, Reflection</h2>
+            <textarea id="reflection-entry" rows="8" placeholder="How was your day? What did you feel? What are you grateful for?"
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 2: Life Map (Daily Architecture) -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-2">🗺️ Life Map (Daily Architecture)</h2>
+            <p class="text-sm italic text-gray-500 mb-4">Log daily adherence and notes based on your routine.</p>
+            <textarea id="life-map-log" rows="15" 
+                      class="w-full p-3 border border-gray-300 rounded-lg text-sm font-mono-custom resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                      placeholder="e.g., 06:40 - Morning Prep: Successful. 13:00 - Exercise: Jogged 30 mins.">
+Time    Activity    Detail
+06:40   Morning Prep
+07:25   School Commute
+08:30   Office Commute (Eng Practice/Finance)
+09:30   Meditation
+09:45   Breakfast
+10:00   Work/Learning
+12:00   Lunch/Rest
+13:00   Exercise/Rest
+14:00   Work Focus
+16:30   End Day
+18:30   Dinner
+19:00   Older Daughter's Learning
+19:50   Bathing
+20:00   Bedtime Prep
+20:30   Younger Daughter's Bedtime
+21:30   Co-Sleeping
+22:00   Laptop Setup
+23:00   Evening Work
+00:00   Exercise (Squat)
+</textarea>
+        </section>
+
+        <!-- Section 3: Work Log -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💼 Work Log</h2>
+            <textarea id="work-entry" rows="10" placeholder="Log today's work progress, meetings, and key issues..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 4: WEEK GOALS -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals (W44)</h2>
+            <p class="text-sm italic text-gray-500 mb-4">W44 goals and important plans.</p>
+            <textarea id="week-goals-entry" rows="8" placeholder="Update on week goals and important plans..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- SECTION 5: GAMIFICATION NOTES -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💡 Gamification Notes</h2>
+            <p class="text-sm italic text-gray-500 mb-4">Core Drives, Octalysis ideas, or other motivational strategies.</p>
+            <textarea id="gamification-notes-entry" rows="5" placeholder="Enter your gamification analysis or notes here..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 6: PERSONAL LONG TERM PLAN -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">⏳ Personal Long Term Plan</h2>
+            <textarea id="long-term-plan-entry" rows="5" placeholder="e.g., Performance App, Robot App, English movies, Japanese..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 7: PERSONAL SHORT TERM PLAN -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🚀 Personal Short Term Plan</h2>
+            <textarea id="short-term-plan-entry" rows="3" placeholder="e.g., Set gamification for Cecilia..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+        
+        <!-- Section 8: ENGLISH PRACTICE -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇬🇧 English Practice</h2>
+            <textarea id="english-practice-entry" rows="3" placeholder="Log today's English learning activity and notes..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 9: JAPANESE PRACTICE -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇯🇵 Japanese Practice</h2>
+            <textarea id="japanese-practice-entry" rows="3" placeholder="Log today's Japanese learning, e.g., vocabulary, grammar, lyrics..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Section 10: CUSTOM END NOTES (User-defined title) -->
+        <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">📝 Custom Daily Notes Header</h2>
+            <!-- Input for the user-defined Markdown Title -->
+            <input type="text" id="custom-notes-title" placeholder="Enter the header title for the final entry (e.g., Final Checklist or New Ideas)"
+                   class="w-full p-3 mb-4 border border-gray-300 rounded-lg text-base focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+            <p class="text-sm italic text-gray-500 mb-4">Enter the content for this custom section below.</p>
+            <textarea id="custom-notes-entry" rows="5" placeholder="Enter notes here..."
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+        </section>
+
+        <!-- Save Button -->
+        <button onclick="generateDiaryEntry()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl transition-colors shadow-lg transform hover:scale-[1.005] duration-200">
+            💾 Generate & Copy Entry
+        </button>
+        
+        <!-- Log Output -->
+        <section id="output-section" class="mt-6">
+            <h2 class="text-xl text-gray-800 font-semibold border-b border-gray-200 pb-2 mb-4">📝 Generated Entry (Copy/Paste)</h2>
+            <textarea id="diary-output" rows="15" readonly 
+                      class="w-full p-4 bg-gray-100 border-2 border-dashed border-gray-400 rounded-lg text-sm font-mono-custom resize-y" 
+                      placeholder="Your formatted entry will appear here after you click 'Generate & Copy Entry'."></textarea>
+        </section>
+
+    </main>
+
+    <footer class="text-sm text-gray-500 mt-4 pb-8">
+        <p>Built for the Life Map Logger &copy; 2025</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Counter Utility Functions ---
+        // Utility function to safely change the number input value, ensuring it stays positive
+        function changeCount(inputId, delta) {
+            const input = document.getElementById(inputId);
+            // Parse the current value, default to 0 if empty or invalid
+            let currentValue = parseInt(input.value) || 0;
+            let newValue = currentValue + delta;
+            
+            // Ensure the value doesn't go below 1 (for consecutive days/counts)
+            if (newValue < 1) {
+                newValue = 1;
+            }
+            
+            input.value = newValue;
+        }
+        // --- END Counter Utility Functions ---
+
+        // New utility function to calculate and update the weekday display
+        function updateWeekday() {
+            const dateInput = document.getElementById('date-input');
+            const weekdayDisplay = document.getElementById('weekday-display');
+            const dateValue = dateInput.value; // Format: YYYY-MM-DD
+
+            if (dateValue) {
+                const date = new Date(dateValue.replace(/-/g, '/')); // Use replace for safer date parsing across browsers
+                
+                // Format YYYY/MM/DD
+                const [year, month, day] = dateValue.split('-');
+                const formattedDate = `${year}/${month}/${day}`;
+                
+                // Get the weekday
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                // Store the full formatted date string for easy retrieval in generateDiaryEntry
+                const fullDateString = `${formattedDate}, ${weekday}`;
+                dateInput.dataset.fullDate = fullDateString;
+
+                // Update display
+                weekdayDisplay.textContent = weekday;
+            } else {
+                weekdayDisplay.textContent = "";
+                dateInput.dataset.fullDate = "";
+            }
+        }
+
+        // Function to format the current date info and set input defaults
+        function updateDateInfo() {
+            const today = new Date();
+            
+            // Format for input type="date" is YYYY-MM-DD
+            const isoDate = today.toISOString().substring(0, 10);
+            
+            // Set initial values for the inputs 
+            document.getElementById('date-input').value = isoDate;
+            document.getElementById('consecutive-day-input').value = 32; 
+            document.getElementById('accumulated-count-input').value = 55; 
+            
+            // Call the new function to set the initial weekday display
+            updateWeekday(); 
+        }
+
+        // Function to generate the complete diary entry in your desired format
+        function generateDiaryEntry() {
+            // 1. Get the values from the text areas
+            const reflection = document.getElementById('reflection-entry').value.trim();
+            const lifeMap = document.getElementById('life-map-log').value.trim();
+            const work = document.getElementById('work-entry').value.trim();
+            
+            // Goals & Plans sections
+            const weekGoals = document.getElementById('week-goals-entry').value.trim();
+            const gamificationNotes = document.getElementById('gamification-notes-entry').value.trim(); 
+            const longTermPlan = document.getElementById('long-term-plan-entry').value.trim();
+            const shortTermPlan = document.getElementById('short-term-plan-entry').value.trim();
+            const englishPractice = document.getElementById('english-practice-entry').value.trim();
+            const japanesePractice = document.getElementById('japanese-practice-entry').value.trim();
+
+            // Custom Notes - Get BOTH the title and the content
+            const customNotesTitle = document.getElementById('custom-notes-title').value.trim();
+            const customNotes = document.getElementById('custom-notes-entry').value.trim();
+
+            // 2. Get the current date line from the editable inputs
+            const dateInput = document.getElementById('date-input');
+            // Pull the pre-calculated and formatted date string
+            const fullDateString = dateInput.dataset.fullDate || 'Date Error, Weekday Error'; 
+            
+            const consecutiveDayInput = document.getElementById('consecutive-day-input').value.trim();
+            const accumulatedCountInput = document.getElementById('accumulated-count-input').value.trim();
+            
+            // Assemble the date line using the editable values
+            const dateLine = `Date: ${fullDateString}, Consecutive Day: ${consecutiveDayInput}, Accumulated Count: ${accumulatedCountInput}`;
+
+
+            // 3. Assemble the final formatted string
+            let output = '';
+
+            // Date/Count Block (Always included)
+            output += dateLine + '\n\n';
+            
+            // --- CONDITIONAL SECTIONS START HERE ---
+            
+            // Story/Reflection Block
+            if (reflection.length > 0) {
+                output += '# Story, Emotion, Gratitude, Reflection\n';
+                output += reflection + '\n\n';
+            }
+
+            // Life Map Block
+            if (lifeMap.length > 0) {
+                output += '# Life Map (Daily Architecture)\n';
+                output += '## In this section, I want to write down the daily routine active. Those actives would be a habit.\n';
+                output += '## These routine active should have a timer to follow. That\'s the concept of regular and discipline.\n';
+                output += lifeMap + '\n\n';
+            }
+
+            // Work Block
+            if (work.length > 0) {
+                output += '# work\n';
+                output += work + '\n\n';
+            }
+            
+            // Goals & Plans Blocks
+            if (weekGoals.length > 0) {
+                output += '# week goals (W44) & important plan\n'; 
+                output += weekGoals + '\n\n';
+            }
+
+            if (gamificationNotes.length > 0) {
+                output += '# Gamification Note\n'; 
+                output += gamificationNotes + '\n\n';
+            }
+
+            if (longTermPlan.length > 0) {
+                output += '# personal long term plan\n';
+                output += longTermPlan + '\n\n';
+            }
+
+            if (shortTermPlan.length > 0) {
+                output += '# personal short term plan\n';
+                output += shortTermPlan + '\n\n';
+            }
+
+            if (englishPractice.length > 0) {
+                output += '# English practice\n';
+                output += englishPractice + '\n\n';
+            }
+
+            if (japanesePractice.length > 0) {
+                output += '# Japanese practice\n';
+                output += japanesePractice + '\n\n'; 
+            }
+
+            // Custom Notes Block (using user-defined title)
+            // Only add this section if there is content in the notes box.
+            if (customNotes.length > 0) {
+                // Use the user's title input, even if it's empty, to generate the header
+                output += `# ${customNotesTitle}\n`; 
+                output += customNotes; 
+            }
+            
+            // Final cleanup: remove trailing newlines to ensure a clean end-of-file
+            output = output.trim();
+
+            // 4. Output to the read-only text area
+            const outputArea = document.getElementById('diary-output');
+            outputArea.value = output;
+            
+            // 5. Attempt to automatically copy the text to the clipboard
+            outputArea.select();
+            outputArea.setSelectionRange(0, 99999); // For mobile devices
+            try {
+                // Using the older but more compatible method for sandbox environments
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    console.log('Entry generated and copied to clipboard successfully!');
+                } else {
+                    console.log('Entry generated. Please manually copy the text from the box below.');
+                }
+            } catch (err) {
+                console.error('Automatic copy failed:', err);
+                console.log('Entry generated. Automatic copy failed; please manually copy the text from the box below.');
+            }
+        }
+
+        // Initialize the date when the page loads
+        window.onload = updateDateInfo;
+    </script>
+</body>
+</html>
