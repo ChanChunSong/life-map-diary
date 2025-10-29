@@ -79,6 +79,11 @@
         </div>
     </header>
 
+    <!-- Status Message -->
+    <div id="status-message" class="w-full max-w-3xl p-3 text-center text-sm font-semibold rounded-t-none bg-yellow-100 text-yellow-800 hidden">
+        Connecting to storage...
+    </div>
+
     <!-- Main Content Area -->
     <main class="w-full max-w-3xl p-6 bg-white shadow-xl rounded-b-xl mb-8">
         
@@ -96,26 +101,26 @@
             <textarea id="life-map-log" rows="15" 
                       class="w-full p-3 border border-gray-300 rounded-lg text-sm font-mono-custom resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
                       placeholder="e.g., 06:40 - Morning Prep: Successful. 13:00 - Exercise: Jogged 30 mins.">
-Time    Activity    Detail
-06:40   Morning Prep
-07:25   School Commute
-08:30   Office Commute (Eng Practice/Finance)
-09:30   Meditation
-09:45   Breakfast
-10:00   Work/Learning
-12:00   Lunch/Rest
-13:00   Exercise/Rest
-14:00   Work Focus
-16:30   End Day
-18:30   Dinner
-19:00   Older Daughter's Learning
-19:50   Bathing
-20:00   Bedtime Prep
-20:30   Younger Daughter's Bedtime
-21:30   Co-Sleeping
-22:00   Laptop Setup
-23:00   Evening Work
-00:00   Exercise (Squat)
+Time	Activity	Detail
+06:40	Morning Prep
+07:25	School Commute
+08:30	Office Commute (Eng Practice/Finance)
+09:30	Meditation
+09:45	Breakfast
+10:00	Work/Learning
+12:00	Lunch/Rest
+13:00	Exercise/Rest
+14:00	Work Focus
+16:30	End Day
+18:30	Dinner
+19:00	Older Daughter's Learning
+19:50	Bathing
+20:00	Bedtime Prep
+20:30	Younger Daughter's Bedtime
+21:30	Co-Sleeping
+22:00	Laptop Setup
+23:00	Evening Work
+00:00	Exercise (Squat)
 </textarea>
         </section>
 
@@ -181,9 +186,9 @@ Time    Activity    Detail
                       class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
         </section>
 
-        <!-- Save Button -->
-        <button onclick="generateDiaryEntry()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl transition-colors shadow-lg transform hover:scale-[1.005] duration-200">
-            💾 Generate & Copy Entry
+        <!-- Save Button now calls saveDiaryEntry -->
+        <button onclick="saveDiaryEntry()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl transition-colors shadow-lg transform hover:scale-[1.005] duration-200">
+            💾 Generate, Save & Copy Entry
         </button>
         
         <!-- Log Output -->
@@ -200,17 +205,79 @@ Time    Activity    Detail
         <p>Built for the Life Map Logger &copy; 2025</p>
     </footer>
 
-    <!-- JavaScript Logic -->
-    <script>
+    <!-- JavaScript Logic & Firebase Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // setLogLevel('Debug'); // Uncomment for detailed console logging
+
+        let db;
+        let auth;
+        let userId = 'default-user';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const statusMessageEl = document.getElementById('status-message');
+
+        /**
+         * Displays a status message to the user.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', or 'info'.
+         */
+        function setStatus(message, type = 'info') {
+            statusMessageEl.textContent = message;
+            statusMessageEl.className = 'w-full max-w-3xl p-3 text-center text-sm font-semibold rounded-t-none';
+
+            if (type === 'success') {
+                statusMessageEl.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                statusMessageEl.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                statusMessageEl.classList.add('bg-yellow-100', 'text-yellow-800');
+            }
+            statusMessageEl.classList.remove('hidden');
+        }
+
+        /**
+         * Initializes Firebase and authenticates the user.
+         */
+        async function initializeFirebase() {
+            if (!firebaseConfig) {
+                setStatus("Error: Firebase configuration not available.", 'error');
+                return;
+            }
+            
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                setStatus("Authenticating user...");
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                setStatus(`Storage ready. User ID: ${userId}`, 'success');
+            } catch (error) {
+                setStatus(`Authentication Failed: ${error.message}`, 'error');
+                console.error("Firebase Init Error:", error);
+            }
+        }
+
+
         // --- Counter Utility Functions ---
-        // Utility function to safely change the number input value, ensuring it stays positive
-        function changeCount(inputId, delta) {
+        window.changeCount = function(inputId, delta) {
             const input = document.getElementById(inputId);
-            // Parse the current value, default to 0 if empty or invalid
             let currentValue = parseInt(input.value) || 0;
             let newValue = currentValue + delta;
             
-            // Ensure the value doesn't go below 1 (for consecutive days/counts)
             if (newValue < 1) {
                 newValue = 1;
             }
@@ -220,13 +287,13 @@ Time    Activity    Detail
         // --- END Counter Utility Functions ---
 
         // New utility function to calculate and update the weekday display
-        function updateWeekday() {
+        window.updateWeekday = function() {
             const dateInput = document.getElementById('date-input');
             const weekdayDisplay = document.getElementById('weekday-display');
             const dateValue = dateInput.value; // Format: YYYY-MM-DD
 
             if (dateValue) {
-                const date = new Date(dateValue.replace(/-/g, '/')); // Use replace for safer date parsing across browsers
+                const date = new Date(dateValue.replace(/-/g, '/'));
                 
                 // Format YYYY/MM/DD
                 const [year, month, day] = dateValue.split('-');
@@ -235,11 +302,10 @@ Time    Activity    Detail
                 // Get the weekday
                 const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
                 
-                // Store the full formatted date string for easy retrieval in generateDiaryEntry
+                // Store the full formatted date string for easy retrieval
                 const fullDateString = `${formattedDate}, ${weekday}`;
                 dateInput.dataset.fullDate = fullDateString;
 
-                // Update display
                 weekdayDisplay.textContent = weekday;
             } else {
                 weekdayDisplay.textContent = "";
@@ -250,118 +316,139 @@ Time    Activity    Detail
         // Function to format the current date info and set input defaults
         function updateDateInfo() {
             const today = new Date();
-            
-            // Format for input type="date" is YYYY-MM-DD
             const isoDate = today.toISOString().substring(0, 10);
             
-            // Set initial values for the inputs 
+            // Set initial values for the inputs (pre-populating with suggested next counts)
             document.getElementById('date-input').value = isoDate;
             document.getElementById('consecutive-day-input').value = 32; 
             document.getElementById('accumulated-count-input').value = 55; 
             
-            // Call the new function to set the initial weekday display
             updateWeekday(); 
         }
 
-        // Function to generate the complete diary entry in your desired format
-        function generateDiaryEntry() {
-            // 1. Get the values from the text areas
-            const reflection = document.getElementById('reflection-entry').value.trim();
-            const lifeMap = document.getElementById('life-map-log').value.trim();
-            const work = document.getElementById('work-entry').value.trim();
-            
-            // Goals & Plans sections
-            const weekGoals = document.getElementById('week-goals-entry').value.trim();
-            const gamificationNotes = document.getElementById('gamification-notes-entry').value.trim(); 
-            const longTermPlan = document.getElementById('long-term-plan-entry').value.trim();
-            const shortTermPlan = document.getElementById('short-term-plan-entry').value.trim();
-            const englishPractice = document.getElementById('english-practice-entry').value.trim();
-            const japanesePractice = document.getElementById('japanese-practice-entry').value.trim();
+        /**
+         * Generates the log and saves the entry to Firestore.
+         */
+        window.saveDiaryEntry = async function() {
+            if (!db || !userId) {
+                setStatus("Error: Database not initialized. Please refresh.", 'error');
+                return;
+            }
 
-            // Custom Notes - Get BOTH the title and the content
-            const customNotesTitle = document.getElementById('custom-notes-title').value.trim();
-            const customNotes = document.getElementById('custom-notes-entry').value.trim();
-
-            // 2. Get the current date line from the editable inputs
+            // 1. Collect all data
             const dateInput = document.getElementById('date-input');
-            // Pull the pre-calculated and formatted date string
-            const fullDateString = dateInput.dataset.fullDate || 'Date Error, Weekday Error'; 
-            
-            const consecutiveDayInput = document.getElementById('consecutive-day-input').value.trim();
-            const accumulatedCountInput = document.getElementById('accumulated-count-input').value.trim();
-            
-            // Assemble the date line using the editable values
-            const dateLine = `Date: ${fullDateString}, Consecutive Day: ${consecutiveDayInput}, Accumulated Count: ${accumulatedCountInput}`;
+            const data = {
+                timestamp: new Date().toISOString(), // When the entry was recorded
+                date: dateInput.value, // YYYY-MM-DD
+                fullDateString: dateInput.dataset.fullDate, // YYYY/MM/DD, Weekday
+                consecutiveDay: document.getElementById('consecutive-day-input').value.trim(),
+                accumulatedCount: document.getElementById('accumulated-count-input').value.trim(),
+                
+                // Core Sections
+                reflection: document.getElementById('reflection-entry').value.trim(),
+                lifeMap: document.getElementById('life-map-log').value.trim(),
+                work: document.getElementById('work-entry').value.trim(),
+                
+                // Goals & Practice
+                weekGoals: document.getElementById('week-goals-entry').value.trim(),
+                gamificationNotes: document.getElementById('gamification-notes-entry').value.trim(), 
+                longTermPlan: document.getElementById('long-term-plan-entry').value.trim(),
+                shortTermPlan: document.getElementById('short-term-plan-entry').value.trim(),
+                englishPractice: document.getElementById('english-practice-entry').value.trim(),
+                japanesePractice: document.getElementById('japanese-practice-entry').value.trim(),
 
+                // Custom Notes
+                customNotesTitle: document.getElementById('custom-notes-title').value.trim(),
+                customNotes: document.getElementById('custom-notes-entry').value.trim(),
+            };
 
-            // 3. Assemble the final formatted string
+            // 2. Format the entry for display (same as previous generateDiaryEntry logic)
+            generateDiaryOutput(data);
+            
+            // 3. Save the entry to Firestore
+            try {
+                setStatus("Saving entry to cloud storage...", 'info');
+                
+                // Firestore path: /artifacts/{appId}/users/{userId}/diary_entries
+                const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/diary_entries`);
+                
+                // Use a standard date format as the document ID for easy lookup, or let Firestore auto-generate.
+                // Letting Firestore auto-generate for simplicity.
+                await addDoc(entriesRef, data);
+                
+                setStatus(`Entry successfully saved! Date: ${data.fullDateString}.`, 'success');
+
+            } catch (error) {
+                setStatus(`Save Failed! Error: ${error.message}`, 'error');
+                console.error("Firestore Save Error:", error);
+            }
+        }
+
+        /**
+         * Generates the formatted text output.
+         * @param {object} data - The collected log data.
+         */
+        function generateDiaryOutput(data) {
             let output = '';
 
             // Date/Count Block (Always included)
+            const dateLine = `Date: ${data.fullDateString}, Consecutive Day: ${data.consecutiveDay}, Accumulated Count: ${data.accumulatedCount}`;
             output += dateLine + '\n\n';
             
             // --- CONDITIONAL SECTIONS START HERE ---
             
-            // Story/Reflection Block
-            if (reflection.length > 0) {
+            if (data.reflection.length > 0) {
                 output += '# Story, Emotion, Gratitude, Reflection\n';
-                output += reflection + '\n\n';
+                output += data.reflection + '\n\n';
             }
 
-            // Life Map Block
-            if (lifeMap.length > 0) {
+            if (data.lifeMap.length > 0) {
                 output += '# Life Map (Daily Architecture)\n';
                 output += '## In this section, I want to write down the daily routine active. Those actives would be a habit.\n';
                 output += '## These routine active should have a timer to follow. That\'s the concept of regular and discipline.\n';
-                output += lifeMap + '\n\n';
+                output += data.lifeMap + '\n\n';
             }
 
-            // Work Block
-            if (work.length > 0) {
+            if (data.work.length > 0) {
                 output += '# work\n';
-                output += work + '\n\n';
+                output += data.work + '\n\n';
             }
             
-            // Goals & Plans Blocks
-            if (weekGoals.length > 0) {
+            if (data.weekGoals.length > 0) {
                 output += '# week goals (W44) & important plan\n'; 
-                output += weekGoals + '\n\n';
+                output += data.weekGoals + '\n\n';
             }
 
-            if (gamificationNotes.length > 0) {
+            if (data.gamificationNotes.length > 0) {
                 output += '# Gamification Note\n'; 
-                output += gamificationNotes + '\n\n';
+                output += data.gamificationNotes + '\n\n';
             }
 
-            if (longTermPlan.length > 0) {
+            if (data.longTermPlan.length > 0) {
                 output += '# personal long term plan\n';
-                output += longTermPlan + '\n\n';
+                output += data.longTermPlan + '\n\n';
             }
 
-            if (shortTermPlan.length > 0) {
+            if (data.shortTermPlan.length > 0) {
                 output += '# personal short term plan\n';
-                output += shortTermPlan + '\n\n';
+                output += data.shortTermPlan + '\n\n';
             }
 
-            if (englishPractice.length > 0) {
+            if (data.englishPractice.length > 0) {
                 output += '# English practice\n';
-                output += englishPractice + '\n\n';
+                output += data.englishPractice + '\n\n';
             }
 
-            if (japanesePractice.length > 0) {
+            if (data.japanesePractice.length > 0) {
                 output += '# Japanese practice\n';
-                output += japanesePractice + '\n\n'; 
+                output += data.japanesePractice + '\n\n'; 
             }
 
-            // Custom Notes Block (using user-defined title)
-            // Only add this section if there is content in the notes box.
-            if (customNotes.length > 0) {
-                // Use the user's title input, even if it's empty, to generate the header
-                output += `# ${customNotesTitle}\n`; 
-                output += customNotes; 
+            if (data.customNotes.length > 0) {
+                output += `# ${data.customNotesTitle}\n`; 
+                output += data.customNotes; 
             }
             
-            // Final cleanup: remove trailing newlines to ensure a clean end-of-file
             output = output.trim();
 
             // 4. Output to the read-only text area
@@ -370,23 +457,19 @@ Time    Activity    Detail
             
             // 5. Attempt to automatically copy the text to the clipboard
             outputArea.select();
-            outputArea.setSelectionRange(0, 99999); // For mobile devices
+            outputArea.setSelectionRange(0, 99999);
             try {
-                // Using the older but more compatible method for sandbox environments
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    console.log('Entry generated and copied to clipboard successfully!');
-                } else {
-                    console.log('Entry generated. Please manually copy the text from the box below.');
-                }
+                document.execCommand('copy');
             } catch (err) {
-                console.error('Automatic copy failed:', err);
-                console.log('Entry generated. Automatic copy failed; please manually copy the text from the box below.');
+                console.warn('Automatic copy failed.');
             }
         }
 
-        // Initialize the date when the page loads
-        window.onload = updateDateInfo;
+        // Initialize on load
+        window.onload = function() {
+            updateDateInfo();
+            initializeFirebase();
+        };
     </script>
 </body>
 </html>
