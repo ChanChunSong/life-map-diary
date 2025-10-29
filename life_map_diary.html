@@ -334,11 +334,19 @@ Time	Activity	Detail
                 if (isRunningInCanvas && initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 }
+                
+                // FIX: If the listener hasn't fired yet, explicitly enable the button 
+                // and set the status to prevent the "Authenticating..." hang.
+                authButton.disabled = false;
+                if (!auth.currentUser) {
+                    authStatusDisplay.textContent = "Ready to sign in.";
+                }
 
             } catch (error) {
                 setStatus(`Initialization Failed: ${error.message}`, 'error');
                 console.error("Firebase Init Error:", error);
                 authButton.disabled = true;
+                authStatusDisplay.textContent = "Authentication Failed.";
             }
         }
 
