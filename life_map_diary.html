@@ -108,26 +108,26 @@
             <textarea id="life-map-log" rows="15" 
                       class="w-full p-3 border border-gray-300 rounded-lg text-sm font-mono-custom resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
                       placeholder="e.g., 06:40 - Morning Prep: Successful. 13:00 - Exercise: Jogged 30 mins.">
-Time    Activity    Detail
-06:40   Morning Prep
-07:25   School Commute
-08:30   Office Commute (Eng Practice/Finance)
-09:30   Meditation
-09:45   Breakfast
-10:00   Work/Learning
-12:00   Lunch/Rest
-13:00   Exercise/Rest
-14:00   Work Focus
-16:30   End Day
-18:30   Dinner
-19:00   Older Daughter's Learning
-19:50   Bathing
-20:00   Bedtime Prep
-20:30   Younger Daughter's Bedtime
-21:30   Co-Sleeping
-22:00   Laptop Setup
-23:00   Evening Work
-00:00   Exercise (Squat)
+Time	Activity	Detail
+06:40	Morning Prep
+07:25	School Commute
+08:30	Office Commute (Eng Practice/Finance)
+09:30	Meditation
+09:45	Breakfast
+10:00	Work/Learning
+12:00	Lunch/Rest
+13:00	Exercise/Rest
+14:00	Work Focus
+16:30	End Day
+18:30	Dinner
+19:00	Older Daughter's Learning
+19:50	Bathing
+20:00	Bedtime Prep
+20:30	Younger Daughter's Bedtime
+21:30	Co-Sleeping
+22:00	Laptop Setup
+23:00	Evening Work
+00:00	Exercise (Squat)
 </textarea>
         </section>
 
@@ -214,28 +214,31 @@ Time    Activity    Detail
 
     <!-- JavaScript Logic & Firebase Integration -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "firebase/app";
-        import { getAnalytics } from "firebase/analytics";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
+        // --- FIX 1 & 3: Updated Imports to use CDN URLs ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // ----------------------------------------------------------------------------------
 
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
-          authDomain: "life-map-diary-logger.firebaseapp.com",
-          projectId: "life-map-diary-logger",
-          storageBucket: "life-map-diary-logger.firebasestorage.app",
-          messagingSenderId: "957220017803",
-          appId: "1:957220017803:web:fa3190aac407fd8c0b268e",
-          measurementId: "G-Q9N5JKHTQ3"
+        // setLogLevel('Debug'); // Uncomment for detailed console logging
+
+        // ----------------------------------------------------------------------------------
+        // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
+        // --- NOTE: I am inserting your provided keys from the previous step here ---
+        const PUBLIC_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+            authDomain: "life-map-diary-logger.firebaseapp.com",
+            projectId: "life-map-diary-logger",
+            storageBucket: "life-map-diary-logger.firebasestorage.app",
+            messagingSenderId: "957220017803",
+            appId: "1:957220017803:web:fa3190aac407fd8c0b268e",
+            measurementId: "G-Q9N5JKHTQ3" // Added for completeness, though not strictly needed for auth/firestore
         };
         // ----------------------------------------------------------------------------------
 
         let db;
         let auth;
-        let userId = null; // Changed to null, relies on successful Google sign-in
+        let userId = null; 
         
         // UI elements
         const statusMessageEl = document.getElementById('status-message');
@@ -253,7 +256,12 @@ Time    Activity    Detail
         if (isRunningInCanvas) {
             finalFirebaseConfig = JSON.parse(__firebase_config);
         } else if (PUBLIC_FIREBASE_CONFIG.apiKey !== "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4") {
+            // This condition is now technically impossible since your keys were pasted above, 
+            // but we keep the logic clean by using the provided keys if we're outside the canvas.
             finalFirebaseConfig = PUBLIC_FIREBASE_CONFIG;
+        } else {
+             // Use the provided config directly if not in Canvas and placeholder is replaced.
+             finalFirebaseConfig = PUBLIC_FIREBASE_CONFIG;
         }
 
         /**
@@ -265,7 +273,7 @@ Time    Activity    Detail
                 const name = user.displayName || user.email;
                 authStatusDisplay.textContent = `Signed in as: ${name}`;
                 authButton.textContent = "Sign Out";
-                authButton.onclick = signOutUser;
+                authButton.onclick = window.signOutUser;
                 saveButton.textContent = "💾 Generate, Save & Copy Entry";
                 saveButton.classList.remove('bg-gray-400');
                 saveButton.classList.add('bg-green-600', 'hover:bg-green-700');
@@ -273,7 +281,7 @@ Time    Activity    Detail
             } else {
                 authStatusDisplay.textContent = "Please sign in to save data.";
                 authButton.textContent = "Sign in with Google";
-                authButton.onclick = signInWithGoogle;
+                authButton.onclick = window.signInWithGoogle;
                 saveButton.textContent = "🔐 Please Sign In to Save Entry";
                 saveButton.classList.remove('bg-green-600', 'hover:bg-green-700');
                 saveButton.classList.add('bg-gray-400');
@@ -303,8 +311,9 @@ Time    Activity    Detail
          * Initializes Firebase and sets up the authentication listener.
          */
         async function initializeFirebase() {
-            if (!finalFirebaseConfig) {
-                const localMessage = "⚠️ Storage Disabled: Firebase keys are missing. To save entries on GitHub Pages, please replace the placeholder config keys in the script.";
+            // This check should only fail if the provided public config is still the placeholder.
+            if (finalFirebaseConfig.apiKey === "YOUR_API_KEY_HERE" || finalFirebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                const localMessage = "⚠️ Storage Disabled: Please replace the placeholder keys in the script with your actual Firebase configuration.";
                 setStatus(localMessage, 'error');
                 console.error("Firebase Initialization Skipped:", localMessage);
                 return;
@@ -319,7 +328,7 @@ Time    Activity    Detail
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
-                        setStatus("Storage ready.", 'success');
+                        setStatus("Storage ready. Signed in.", 'success');
                         updateUserUI(user);
                     } else {
                         userId = null;
@@ -334,7 +343,6 @@ Time    Activity    Detail
                 }
                 
                 // FIX: If the listener hasn't fired yet, explicitly enable the button 
-                // and set the status to prevent the "Authenticating..." hang.
                 authButton.disabled = false;
                 if (!auth.currentUser) {
                     authStatusDisplay.textContent = "Ready to sign in.";
@@ -348,10 +356,16 @@ Time    Activity    Detail
             }
         }
 
+        // --- FIX 2: Explicitly attach functions to window object ---
+
         /**
          * Authenticates the user using a Google pop-up window.
          */
         window.signInWithGoogle = async function() {
+            if (!auth) {
+                setStatus("Error: Authentication not initialized.", 'error');
+                return;
+            }
             try {
                 setStatus("Opening Google sign-in window...", 'info');
                 const provider = new GoogleAuthProvider();
@@ -371,6 +385,7 @@ Time    Activity    Detail
          * Signs the current user out.
          */
         window.signOutUser = async function() {
+            if (!auth) return;
             try {
                 await signOut(auth);
                 setStatus("Successfully signed out.", 'success');
@@ -381,7 +396,9 @@ Time    Activity    Detail
             }
         }
 
-        // --- Counter Utility Functions ---
+        /**
+         * Counter Utility Function
+         */
         window.changeCount = function(inputId, delta) {
             const input = document.getElementById(inputId);
             let currentValue = parseInt(input.value) || 0;
@@ -393,9 +410,10 @@ Time    Activity    Detail
             
             input.value = newValue;
         }
-        // --- END Counter Utility Functions ---
-
-        // New utility function to calculate and update the weekday display
+        
+        /**
+         * Utility function to calculate and update the weekday display
+         */
         window.updateWeekday = function() {
             const dateInput = document.getElementById('date-input');
             const weekdayDisplay = document.getElementById('weekday-display');
