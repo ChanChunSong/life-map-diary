@@ -246,7 +246,10 @@ Time	Activity	Detail
          */
         async function initializeFirebase() {
             if (!firebaseConfig) {
-                setStatus("Error: Firebase configuration not available.", 'error');
+                // MODIFIED: Provide a much clearer status message for local file access.
+                const localMessage = "⚠️ Storage Disabled: Firebase keys are missing. To save entries, please run this page from a web server (like GitHub Pages).";
+                setStatus(localMessage, 'error');
+                console.error("Firebase Initialization Skipped:", localMessage);
                 return;
             }
             
@@ -331,7 +334,10 @@ Time	Activity	Detail
          */
         window.saveDiaryEntry = async function() {
             if (!db || !userId) {
-                setStatus("Error: Database not initialized. Please refresh.", 'error');
+                // This is the error you saw. It means initialization failed earlier.
+                // We keep the old message so the error can be found easily, but the status bar
+                // should have the much clearer message from initializeFirebase().
+                setStatus("Error: Database not initialized. Please refresh.", 'error'); 
                 return;
             }
 
@@ -372,8 +378,6 @@ Time	Activity	Detail
                 // Firestore path: /artifacts/{appId}/users/{userId}/diary_entries
                 const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/diary_entries`);
                 
-                // Use a standard date format as the document ID for easy lookup, or let Firestore auto-generate.
-                // Letting Firestore auto-generate for simplicity.
                 await addDoc(entriesRef, data);
                 
                 setStatus(`Entry successfully saved! Date: ${data.fullDateString}.`, 'success');
