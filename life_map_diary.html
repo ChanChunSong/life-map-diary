@@ -108,26 +108,26 @@
             <textarea id="life-map-log" rows="15" 
                       class="w-full p-3 border border-gray-300 rounded-lg text-sm font-mono-custom resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
                       placeholder="e.g., 06:40 - Morning Prep: Successful. 13:00 - Exercise: Jogged 30 mins.">
-Time	Activity	Detail
-06:40	Morning Prep
-07:25	School Commute
-08:30	Office Commute (Eng Practice/Finance)
-09:30	Meditation
-09:45	Breakfast
-10:00	Work/Learning
-12:00	Lunch/Rest
-13:00	Exercise/Rest
-14:00	Work Focus
-16:30	End Day
-18:30	Dinner
-19:00	Older Daughter's Learning
-19:50	Bathing
-20:00	Bedtime Prep
-20:30	Younger Daughter's Bedtime
-21:30	Co-Sleeping
-22:00	Laptop Setup
-23:00	Evening Work
-00:00	Exercise (Squat)
+Time    Activity    Detail
+06:40   Morning Prep
+07:25   School Commute
+08:30   Office Commute (Eng Practice/Finance)
+09:30   Meditation
+09:45   Breakfast
+10:00   Work/Learning
+12:00   Lunch/Rest
+13:00   Exercise/Rest
+14:00   Work Focus
+16:30   End Day
+18:30   Dinner
+19:00   Older Daughter's Learning
+19:50   Bathing
+20:00   Bedtime Prep
+20:30   Younger Daughter's Bedtime
+21:30   Co-Sleeping
+22:00   Laptop Setup
+23:00   Evening Work
+00:00   Exercise (Squat)
 </textarea>
         </section>
 
@@ -214,24 +214,22 @@ Time	Activity	Detail
 
     <!-- JavaScript Logic & Firebase Integration -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // NOTE: Added GoogleAuthProvider, signInWithPopup, signOut
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "firebase/app";
+        import { getAnalytics } from "firebase/analytics";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
 
-        // setLogLevel('Debug'); // Uncomment for detailed console logging
-
-        // ----------------------------------------------------------------------------------
-        // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
-        // Replace these placeholder values with your actual Firebase Web App configuration keys.
-        // You MUST replace YOUR_API_KEY_HERE and YOUR_PROJECT_ID with valid values.
-        const PUBLIC_FIREBASE_CONFIG = {
-            apiKey: "YOUR_API_KEY_HERE", 
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "SENDER_ID_HERE",
-            appId: "APP_ID_HERE"
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+          authDomain: "life-map-diary-logger.firebaseapp.com",
+          projectId: "life-map-diary-logger",
+          storageBucket: "life-map-diary-logger.firebasestorage.app",
+          messagingSenderId: "957220017803",
+          appId: "1:957220017803:web:fa3190aac407fd8c0b268e",
+          measurementId: "G-Q9N5JKHTQ3"
         };
         // ----------------------------------------------------------------------------------
 
