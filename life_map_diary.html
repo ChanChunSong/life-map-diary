@@ -45,15 +45,14 @@
     <!-- Header -->
     <header class="w-full max-w-3xl bg-blue-700 text-white p-6 rounded-t-xl shadow-xl text-center">
         <h1 class="text-3xl font-extrabold mb-1">Daily Log & Life Map</h1>
+        
         <!-- Editable Date and Count Inputs -->
         <div class="flex flex-wrap justify-center space-x-2 space-y-2 sm:space-y-0 text-sm mt-3">
             
             <!-- Date Input with Native Picker and Dynamic Weekday -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Date:</span>
-                <!-- Changed to type="date" for native controls -->
                 <input type="date" id="date-input" onchange="updateWeekday()" class="p-1 w-32 text-sm text-gray-800 rounded focus:ring-blue-300 focus:border-blue-300 border-none">
-                <!-- Display for calculated Weekday -->
                 <span id="weekday-display" class="text-sm"></span>
             </div>
             
@@ -76,6 +75,14 @@
                     <button onclick="changeCount('accumulated-count-input', 1)" class="px-2 bg-gray-200 text-gray-800 hover:bg-gray-300 transition duration-150 font-bold text-base focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-r-md">+</button>
                 </div>
             </div>
+        </div>
+
+        <!-- Authentication Area -->
+        <div class="mt-4 border-t border-blue-600 pt-3 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <p id="auth-status-display" class="text-sm font-medium">Authenticating...</p>
+            <button id="auth-button" onclick="signInWithGoogle()" class="px-4 py-2 bg-white text-blue-700 rounded-lg font-bold hover:bg-gray-100 transition duration-150 shadow-md disabled:opacity-50" disabled>
+                Sign in with Google
+            </button>
         </div>
     </header>
 
@@ -187,8 +194,8 @@ Time	Activity	Detail
         </section>
 
         <!-- Save Button now calls saveDiaryEntry -->
-        <button onclick="saveDiaryEntry()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl transition-colors shadow-lg transform hover:scale-[1.005] duration-200">
-            💾 Generate, Save & Copy Entry
+        <button id="save-button" onclick="saveDiaryEntry()" class="w-full py-4 bg-gray-400 text-white font-bold text-lg rounded-xl transition-colors shadow-lg disabled:opacity-50" disabled>
+            🔐 Please Sign In to Save Entry
         </button>
         
         <!-- Log Output -->
@@ -208,24 +215,77 @@ Time	Activity	Detail
     <!-- JavaScript Logic & Firebase Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // NOTE: Added GoogleAuthProvider, signInWithPopup, signOut
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // setLogLevel('Debug'); // Uncomment for detailed console logging
 
+        // ----------------------------------------------------------------------------------
+        // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
+        // Replace these placeholder values with your actual Firebase Web App configuration keys.
+        // You MUST replace YOUR_API_KEY_HERE and YOUR_PROJECT_ID with valid values.
+        const PUBLIC_FIREBASE_CONFIG = {
+            apiKey: "YOUR_API_KEY_HERE", 
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "SENDER_ID_HERE",
+            appId: "APP_ID_HERE"
+        };
+        // ----------------------------------------------------------------------------------
+
         let db;
         let auth;
-        let userId = 'default-user';
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
+        let userId = null; // Changed to null, relies on successful Google sign-in
+        
+        // UI elements
         const statusMessageEl = document.getElementById('status-message');
+        const authStatusDisplay = document.getElementById('auth-status-display');
+        const authButton = document.getElementById('auth-button');
+        const saveButton = document.getElementById('save-button');
+
+        // Check if running in the secure Canvas environment
+        const isRunningInCanvas = typeof __firebase_config !== 'undefined';
+        
+        let finalFirebaseConfig = null;
+        let finalAppId = isRunningInCanvas ? (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id') : PUBLIC_FIREBASE_CONFIG.projectId;
+        let initialAuthToken = isRunningInCanvas ? (typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null) : null;
+        
+        if (isRunningInCanvas) {
+            finalFirebaseConfig = JSON.parse(__firebase_config);
+        } else if (PUBLIC_FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY_HERE") {
+            finalFirebaseConfig = PUBLIC_FIREBASE_CONFIG;
+        }
+
+        /**
+         * Updates the UI based on the user's authentication state.
+         * @param {object | null} user - The authenticated Firebase user object or null.
+         */
+        function updateUserUI(user) {
+            if (user) {
+                const name = user.displayName || user.email;
+                authStatusDisplay.textContent = `Signed in as: ${name}`;
+                authButton.textContent = "Sign Out";
+                authButton.onclick = signOutUser;
+                saveButton.textContent = "💾 Generate, Save & Copy Entry";
+                saveButton.classList.remove('bg-gray-400');
+                saveButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                saveButton.disabled = false;
+            } else {
+                authStatusDisplay.textContent = "Please sign in to save data.";
+                authButton.textContent = "Sign in with Google";
+                authButton.onclick = signInWithGoogle;
+                saveButton.textContent = "🔐 Please Sign In to Save Entry";
+                saveButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                saveButton.classList.add('bg-gray-400');
+                saveButton.disabled = true;
+            }
+            authButton.disabled = false;
+        }
 
         /**
          * Displays a status message to the user.
-         * @param {string} message - The message to display.
-         * @param {string} type - 'success', 'error', or 'info'.
          */
         function setStatus(message, type = 'info') {
             statusMessageEl.textContent = message;
@@ -242,38 +302,78 @@ Time	Activity	Detail
         }
 
         /**
-         * Initializes Firebase and authenticates the user.
+         * Initializes Firebase and sets up the authentication listener.
          */
         async function initializeFirebase() {
-            if (!firebaseConfig) {
-                // MODIFIED: Provide a much clearer status message for local file access.
-                const localMessage = "⚠️ Storage Disabled: Firebase keys are missing. To save entries, please run this page from a web server (like GitHub Pages).";
+            if (!finalFirebaseConfig) {
+                const localMessage = "⚠️ Storage Disabled: Firebase keys are missing. To save entries on GitHub Pages, please replace the placeholder config keys in the script.";
                 setStatus(localMessage, 'error');
                 console.error("Firebase Initialization Skipped:", localMessage);
                 return;
             }
             
             try {
-                const app = initializeApp(firebaseConfig);
+                const app = initializeApp(finalFirebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                setStatus("Authenticating user...");
-                
-                if (initialAuthToken) {
+                // Set up the listener for auth state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        setStatus("Storage ready.", 'success');
+                        updateUserUI(user);
+                    } else {
+                        userId = null;
+                        setStatus("Ready for sign-in.", 'info');
+                        updateUserUI(null);
+                    }
+                });
+
+                // Only sign in with custom token in the secure canvas environment
+                if (isRunningInCanvas && initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
                 }
 
-                userId = auth.currentUser?.uid || crypto.randomUUID();
-                setStatus(`Storage ready. User ID: ${userId}`, 'success');
             } catch (error) {
-                setStatus(`Authentication Failed: ${error.message}`, 'error');
+                setStatus(`Initialization Failed: ${error.message}`, 'error');
                 console.error("Firebase Init Error:", error);
+                authButton.disabled = true;
             }
         }
 
+        /**
+         * Authenticates the user using a Google pop-up window.
+         */
+        window.signInWithGoogle = async function() {
+            try {
+                setStatus("Opening Google sign-in window...", 'info');
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                // Listener handles status update via onAuthStateChanged
+            } catch (error) {
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    setStatus(`Sign-in Failed: ${error.message}`, 'error');
+                    console.error("Google Sign-in Error:", error);
+                } else {
+                    setStatus("Sign-in cancelled.", 'info');
+                }
+            }
+        }
+
+        /**
+         * Signs the current user out.
+         */
+        window.signOutUser = async function() {
+            try {
+                await signOut(auth);
+                setStatus("Successfully signed out.", 'success');
+                // Listener handles UI update via onAuthStateChanged
+            } catch (error) {
+                setStatus(`Sign-out Failed: ${error.message}`, 'error');
+                console.error("Sign-out Error:", error);
+            }
+        }
 
         // --- Counter Utility Functions ---
         window.changeCount = function(inputId, delta) {
@@ -334,10 +434,7 @@ Time	Activity	Detail
          */
         window.saveDiaryEntry = async function() {
             if (!db || !userId) {
-                // This is the error you saw. It means initialization failed earlier.
-                // We keep the old message so the error can be found easily, but the status bar
-                // should have the much clearer message from initializeFirebase().
-                setStatus("Error: Database not initialized. Please refresh.", 'error'); 
+                setStatus("Error: Cannot save. Please ensure you are signed in.", 'error'); 
                 return;
             }
 
@@ -375,8 +472,8 @@ Time	Activity	Detail
             try {
                 setStatus("Saving entry to cloud storage...", 'info');
                 
-                // Firestore path: /artifacts/{appId}/users/{userId}/diary_entries
-                const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/diary_entries`);
+                // Firestore path: /artifacts/{finalAppId}/users/{userId}/diary_entries
+                const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
                 
                 await addDoc(entriesRef, data);
                 
@@ -390,7 +487,6 @@ Time	Activity	Detail
 
         /**
          * Generates the formatted text output.
-         * @param {object} data - The collected log data.
          */
         function generateDiaryOutput(data) {
             let output = '';
