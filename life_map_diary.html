@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Life Map & Daily Log</title>
-    <!-- Load Tailwind CSS for modern, responsive styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for better readability of the monospace output */
@@ -63,21 +62,17 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 bg-gray-50">
-    <!-- Header - Now spans wider for the two-column view -->
     <header class="w-full max-w-3xl md:max-w-6xl bg-blue-700 text-white p-6 rounded-t-xl shadow-xl text-center">
         <h1 class="text-3xl font-extrabold mb-1">Daily Log & Life Map</h1>
         
-        <!-- Editable Date and Count Inputs -->
         <div class="flex flex-wrap justify-center space-x-2 space-y-2 sm:space-y-0 text-sm mt-3">
             
-            <!-- Date Input with Native Picker and Dynamic Weekday -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Date:</span>
                 <input type="date" id="date-input" class="p-1 w-32 text-sm text-gray-800 rounded focus:ring-blue-300 focus:border-blue-300 border-none">
                 <span id="weekday-display" class="text-sm"></span>
             </div>
             
-            <!-- Consecutive Day Input with Custom Buttons -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Day:</span>
                 <div class="flex items-stretch rounded overflow-hidden">
@@ -87,7 +82,6 @@
                 </div>
             </div>
 
-            <!-- Accumulated Count Input with Custom Buttons -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Count:</span>
                 <div class="flex items-stretch rounded overflow-hidden">
@@ -98,7 +92,6 @@
             </div>
         </div>
 
-        <!-- Authentication Area -->
         <div class="mt-4 border-t border-blue-600 pt-3 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <p id="auth-status-display" class="text-sm font-medium">Authenticating...</p>
             <button id="auth-button" onclick="signInWithGoogle()" class="px-4 py-2 bg-white text-blue-700 rounded-lg font-bold hover:bg-gray-100 transition duration-150 shadow-md disabled:opacity-50" disabled>
@@ -107,39 +100,31 @@
         </div>
     </header>
 
-    <!-- Status Message -->
     <div id="status-message" class="w-full max-w-3xl md:max-w-6xl p-3 text-center text-sm font-semibold rounded-t-none bg-yellow-100 text-yellow-800 hidden">
         Connecting to storage...
     </div>
 
-    <!-- HISTORY SECTION (New position, Full-width band below header/status) -->
     <section id="history-section" class="w-full max-w-3xl md:max-w-6xl mx-auto p-5 rounded-b-xl border border-blue-200 bg-white shadow-xl mb-6">
         <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-300 pb-2 mb-4">🕰️ Past Entries History</h2>
         
-        <!-- DROPDOWN SELECT BOX -->
         <select id="history-dropdown" onchange="handleHistorySelect()">
             <option value="" disabled selected>Select a past entry...</option>
         </select>
 
-        <!-- Status message specifically for the history loading -->
         <p id="history-status" class="text-gray-500 italic mt-2">Sign in to load history...</p>
         
     </section>
 
-    <!-- MAIN CONTENT WRAPPER -->
     <div class="w-full max-w-3xl md:max-w-6xl mx-auto">
         
-        <!-- MAIN CONTENT: Form and Output (Full Width of wrapper) -->
         <main class="w-full p-6 bg-white shadow-xl rounded-xl mb-8">
             
-            <!-- Section 1: Story, Emotion, Gratitude, Reflection -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">✨ Story, Emotion, Gratitude, Reflection</h2>
                 <textarea id="reflection-entry" rows="8" placeholder="How was your day? What did you feel? What are you grateful for?"
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Section 2: Life Map (Daily Architecture) -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-2">🗺️ Life Map (Daily Architecture)</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Log daily adherence and notes based on your routine.</p>
@@ -169,17 +154,15 @@ Time    Activity    Detail
 </textarea>
             </section>
 
-            <!-- Section 3: Work Log - NOW DYNAMIC LIST -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💼 Work Log (Dynamic Tasks)</h2>
                 
-                <!-- Container for dynamic task rows -->
                 <div id="work-items-container" class="space-y-4 mb-4">
-                    <!-- Default/Sample Item -->
                     <div class="work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <input type="checkbox" class="task-status-checkbox w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                            <input type="text" placeholder="Task Title (e.g., UFS error log capture)" class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                        <div class="flex items-start space-x-3 mb-2">
+                            <input type="checkbox" class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                            <input type="text" placeholder="Task Title (e.g., UFS error log capture)" 
+                                   class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
                             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                         </div>
                         <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
@@ -192,7 +175,6 @@ Time    Activity    Detail
                 </button>
             </section>
             
-            <!-- Section 4: WEEK GOALS -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals (W44)</h2>
                 <p class="text-sm italic text-gray-500 mb-4">W44 goals and important plans.</p>
@@ -200,7 +182,6 @@ Time    Activity    Detail
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- SECTION 5: GAMIFICATION NOTES -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💡 Gamification Notes</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Core Drives, Octalysis ideas, or other motivational strategies.</p>
@@ -208,38 +189,32 @@ Time    Activity    Detail
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Section 6: PERSONAL LONG TERM PLAN -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">⏳ Personal Long Term Plan</h2>
                 <textarea id="long-term-plan-entry" rows="5" placeholder="e.g., Performance App, Robot App, English movies, Japanese..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Section 7: PERSONAL SHORT TERM PLAN -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🚀 Personal Short Term Plan</h2>
                 <textarea id="short-term-plan-entry" rows="3" placeholder="e.g., Set gamification for Cecilia..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
             
-            <!-- Section 8: ENGLISH PRACTICE -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇬🇧 English Practice</h2>
                 <textarea id="english-practice-entry" rows="3" placeholder="Log today's English learning activity and notes..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Section 9: JAPANESE PRACTICE -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇯🇵 Japanese Practice</h2>
                 <textarea id="japanese-practice-entry" rows="3" placeholder="Log today's Japanese learning, e.g., vocabulary, grammar, lyrics..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Section 10: CUSTOM END NOTES (User-defined title) -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">📝 Custom Daily Notes Header</h2>
-                <!-- Input for the user-defined Markdown Title -->
                 <input type="text" id="custom-notes-title" placeholder="Enter the header title for the final entry (e.g., Final Checklist or New Ideas)"
                        class="w-full p-3 mb-4 border border-gray-300 rounded-lg text-base focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
                 <p class="text-sm italic text-gray-500 mb-4">Enter the content for this custom section below.</p>
@@ -247,12 +222,10 @@ Time    Activity    Detail
                       class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
-            <!-- Save Button now calls saveDiaryEntry -->
             <button id="save-button" onclick="saveDiaryEntry()" class="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl transition-colors shadow-lg hover:bg-green-700 disabled:opacity-50" disabled>
                 💾 Generate, Save & Copy Entry
             </button>
             
-            <!-- Log Output -->
             <section id="output-section" class="mt-6">
                 <h2 class="text-xl text-gray-800 font-semibold border-b border-gray-200 pb-2 mb-4">📝 Generated Entry (Copy/Paste)</h2>
                 <textarea id="diary-output" rows="15" readonly 
@@ -266,12 +239,11 @@ Time    Activity    Detail
         <p>Built for the Life Map Logger &copy; 2025</p>
     </footer>
 
-    <!-- JavaScript Logic & Firebase Integration -->
     <script type="module">
         // --- CDN Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         // ----------------------------------------------------------------------------------
 
         // setLogLevel('Debug'); // Uncomment for detailed console logging
@@ -335,7 +307,10 @@ Time    Activity    Detail
                 saveButton.classList.add('bg-green-600', 'hover:bg-green-700');
                 saveButton.disabled = false;
                 
-                // Load data immediately after sign-in
+                // 1. Auto-load the very latest entry immediately (one-time fetch)
+                window.loadLatestEntry();
+                
+                // 2. Start the real-time listener for the history dropdown
                 window.loadPastEntries();
             } else {
                 authStatusDisplay.textContent = "Please sign in to save data.";
@@ -435,7 +410,40 @@ Time    Activity    Detail
                 const loadConfirmed = window.confirm(`Load entry from ${data.fullDateString} into the current form? Any unsaved changes will be lost.`);
                 if (loadConfirmed) {
                     loadEntryIntoForm(data);
+                    setStatus(`Entry from ${data.fullDateString} loaded successfully.`, 'info');
                 }
+            }
+        }
+
+        /**
+         * Loads the single most recent entry into the form (one-time fetch).
+         */
+        window.loadLatestEntry = async function() {
+            if (!db || !userId) return;
+
+            try {
+                // Query for only the newest entry
+                const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
+                const q = query(entriesRef, orderBy('timestamp', 'desc'), limit(1));
+                
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    const latestEntry = snapshot.docs[0].data();
+                    const latestDocId = snapshot.docs[0].id; // Get the ID to select in the dropdown
+                    
+                    loadEntryIntoForm(latestEntry);
+                    
+                    // Set the dropdown to the loaded item's ID
+                    historyDropdownEl.value = latestDocId;
+                    
+                    setStatus(`Latest entry from ${latestEntry.fullDateString} loaded automatically.`, 'info');
+                } else {
+                    setStatus("No previous entries found. Starting fresh.", 'info');
+                }
+            } catch (error) {
+                setStatus(`Error loading latest entry: ${error.message}`, 'error');
+                console.error("Firestore Latest Load Error:", error);
             }
         }
 
@@ -464,7 +472,11 @@ Time    Activity    Detail
 
                 // 2. Set up the real-time listener
                 unsubscribeHistory = onSnapshot(q, (snapshot) => {
-                    historyDropdownEl.innerHTML = '<option value="" value="">Select a past entry...</option>';
+                    
+                    // Preserve selected value before clearing to handle real-time updates
+                    const selectedDocId = historyDropdownEl.value;
+
+                    historyDropdownEl.innerHTML = '<option value="" disabled selected>Select a past entry...</option>';
                     historyDropdownEl.value = ""; // Ensure nothing is selected
                     loadedEntries = {};
                     
@@ -474,8 +486,8 @@ Time    Activity    Detail
                     }
 
                     historyStatusEl.textContent = `${snapshot.docs.length} recent entries loaded.`;
-
-                    snapshot.forEach(doc => {
+                    
+                    snapshot.forEach((doc, index) => {
                         const data = doc.data();
                         const docId = doc.id;
                         
@@ -485,10 +497,20 @@ Time    Activity    Detail
                         // Create the dropdown option
                         const option = document.createElement('option');
                         option.value = docId;
-                        // Use the date (docId) as it's guaranteed to be unique and the date the entry represents
                         option.textContent = `${data.fullDateString} (Day ${data.consecutiveDay})`;
                         historyDropdownEl.appendChild(option);
                     });
+                    
+                    // Re-select the previously selected item, if it exists, or the item loaded by loadLatestEntry
+                    // Since loadLatestEntry runs first and sets the value, this restores it after the list rebuilds.
+                    if (loadedEntries[selectedDocId]) {
+                        historyDropdownEl.value = selectedDocId;
+                    } else if (historyDropdownEl.value === "") {
+                         // Fallback: If nothing is selected, select the newest entry (first one in the list)
+                         historyDropdownEl.value = snapshot.docs[0].id;
+                    }
+
+
                 }, (error) => {
                     historyStatusEl.textContent = `Error loading history: ${error.message}`;
                     console.error("Firestore History Error:", error);
@@ -507,15 +529,16 @@ Time    Activity    Detail
             const container = document.createElement('div');
             container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
             
+            // Use innerHTML for complex structure, ensuring proper quoting for attributes
             container.innerHTML = `
                 <div class="flex items-start space-x-3 mb-2">
                     <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                    <input type="text" value="${task.title}" placeholder="Task Title" 
+                    <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title" 
                            class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
                     <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                 </div>
                 <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
-                          class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-base resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail}</textarea>
+                          class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
             `;
             return container;
         }
@@ -531,31 +554,31 @@ Time    Activity    Detail
             window.updateWeekday(); // Ensure the weekday display is updated
 
             // Update Text Areas
-            document.getElementById('reflection-entry').value = data.reflection;
-            document.getElementById('life-map-log').value = data.lifeMap;
-            document.getElementById('week-goals-entry').value = data.weekGoals;
-            document.getElementById('gamification-notes-entry').value = data.gamificationNotes;
-            document.getElementById('long-term-plan-entry').value = data.longTermPlan;
-            document.getElementById('short-term-plan-entry').value = data.shortTermPlan;
-            document.getElementById('english-practice-entry').value = data.englishPractice;
-            document.getElementById('japanese-practice-entry').value = data.japanesePractice;
-            document.getElementById('custom-notes-title').value = data.customNotesTitle;
-            document.getElementById('custom-notes-entry').value = data.customNotes;
+            document.getElementById('reflection-entry').value = data.reflection || '';
+            document.getElementById('life-map-log').value = data.lifeMap || '';
+            document.getElementById('week-goals-entry').value = data.weekGoals || '';
+            document.getElementById('gamification-notes-entry').value = data.gamificationNotes || '';
+            document.getElementById('long-term-plan-entry').value = data.longTermPlan || '';
+            document.getElementById('short-term-plan-entry').value = data.shortTermPlan || '';
+            document.getElementById('english-practice-entry').value = data.englishPractice || '';
+            document.getElementById('japanese-practice-entry').value = data.japanesePractice || '';
+            document.getElementById('custom-notes-title').value = data.customNotesTitle || '';
+            document.getElementById('custom-notes-entry').value = data.customNotes || '';
             
-            // --- NEW: Load Dynamic Work Log ---
+            // --- Load Dynamic Work Log ---
             workItemsContainer.innerHTML = '';
-            if (Array.isArray(data.work)) {
+            if (Array.isArray(data.work) && data.work.length > 0) {
                  data.work.forEach(task => {
                     workItemsContainer.appendChild(createWorkItemElement(task));
                  });
-            } else {
-                // Handle case where old data might be a single string (backward compatibility)
-                const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Work Log (from previous format)', detail: data.work || '' });
+            } else if (data.work && typeof data.work === 'string' && data.work.length > 0) {
+                // Backward compatibility for old single-string work log
+                const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Previous Work Log (converted)', detail: data.work });
                 workItemsContainer.appendChild(defaultTask);
+            } else {
+                 // Load one empty item if no work items exist
+                 workItemsContainer.appendChild(createWorkItemElement());
             }
-            // --- END NEW ---
-
-            setStatus(`Successfully loaded entry from ${data.fullDateString}. Remember to generate and save if you make changes.`, 'info');
         }
 
         // --- Explicitly attach window functions ---
@@ -622,42 +645,6 @@ Time    Activity    Detail
                 dateInput.dataset.fullDate = "";
             }
         }
-        
-        // --- NEW DYNAMIC WORK LOG FUNCTIONS ---
-        window.addWorkItem = function() {
-            workItemsContainer.appendChild(createWorkItemElement());
-        }
-
-        window.removeWorkItem = function(buttonEl) {
-            const container = buttonEl.closest('.work-item-container');
-            container.remove();
-        }
-
-        function collectWorkItems() {
-            const items = [];
-            const workItemElements = workItemsContainer.querySelectorAll('.work-item-container');
-            
-            workItemElements.forEach(container => {
-                const titleInput = container.querySelector('.task-title-input');
-                const detailInput = container.querySelector('.task-detail-input');
-                const checkbox = container.querySelector('.task-status-checkbox');
-
-                const title = titleInput ? titleInput.value.trim() : '';
-                const detail = detailInput ? detailInput.value.trim() : '';
-                const isCompleted = checkbox ? checkbox.checked : false;
-
-                // Only save items that have either a title or details
-                if (title.length > 0 || detail.length > 0) {
-                    items.push({
-                        isCompleted: isCompleted,
-                        title: title,
-                        detail: detail
-                    });
-                }
-            });
-            return items;
-        }
-        // --- END NEW DYNAMIC WORK LOG FUNCTIONS ---
 
         window.saveDiaryEntry = async function() {
             if (!db || !userId) {
@@ -740,7 +727,8 @@ Time    Activity    Detail
                     const status = task.isCompleted ? '✓ ' : '— ';
                     output += status + task.title + '\n';
                     if (task.detail && task.detail.length > 0) {
-                        output += '  -> ' + task.detail.replace(/\n/g, '\n  -> ') + '\n\n'; // Indent details
+                        // Use a custom tab indent for details to match your original format
+                        output += '  -> ' + task.detail.replace(/\n/g, '\n  -> ') + '\n\n';
                     } else {
                          output += '\n';
                     }
@@ -816,6 +804,11 @@ Time    Activity    Detail
             
             // Attach the date change listener programmatically
             document.getElementById('date-input').addEventListener('change', window.updateWeekday);
+
+            // Load one empty item to start the work log, if the container is empty
+            if (workItemsContainer.children.length === 0) {
+                workItemsContainer.appendChild(createWorkItemElement());
+            }
 
             updateDateInfo(); // Call the local setup function
             initializeFirebase();
