@@ -55,6 +55,11 @@
             font-size: 12px;
             color: #4b5563;
         }
+        
+        /* Custom style for the work list items */
+        .work-item-container {
+            transition: background-color 0.2s;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 bg-gray-50">
@@ -107,7 +112,7 @@
         Connecting to storage...
     </div>
 
-    <!-- NEW POSITION FOR HISTORY SECTION: Full-width band below header/status -->
+    <!-- HISTORY SECTION (New position, Full-width band below header/status) -->
     <section id="history-section" class="w-full max-w-3xl md:max-w-6xl mx-auto p-5 rounded-b-xl border border-blue-200 bg-white shadow-xl mb-6">
         <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-300 pb-2 mb-4">🕰️ Past Entries History</h2>
         
@@ -121,7 +126,7 @@
         
     </section>
 
-    <!-- MAIN CONTENT WRAPPER (Now contains only the form and output) -->
+    <!-- MAIN CONTENT WRAPPER -->
     <div class="w-full max-w-3xl md:max-w-6xl mx-auto">
         
         <!-- MAIN CONTENT: Form and Output (Full Width of wrapper) -->
@@ -164,13 +169,29 @@ Time    Activity    Detail
 </textarea>
             </section>
 
-            <!-- Section 3: Work Log -->
+            <!-- Section 3: Work Log - NOW DYNAMIC LIST -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
-                <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💼 Work Log</h2>
-                <textarea id="work-entry" rows="10" placeholder="Log today's work progress, meetings, and key issues..."
-                          class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
-            </section>
+                <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💼 Work Log (Dynamic Tasks)</h2>
+                
+                <!-- Container for dynamic task rows -->
+                <div id="work-items-container" class="space-y-4 mb-4">
+                    <!-- Default/Sample Item -->
+                    <div class="work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <input type="checkbox" class="task-status-checkbox w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                            <input type="text" placeholder="Task Title (e.g., UFS error log capture)" class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                            <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+                        </div>
+                        <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
+                                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-base resize-y focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                </div>
 
+                <button onclick="addWorkItem()" class="w-full py-2 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">
+                    + Add Work Item
+                </button>
+            </section>
+            
             <!-- Section 4: WEEK GOALS -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals (W44)</h2>
@@ -223,7 +244,7 @@ Time    Activity    Detail
                        class="w-full p-3 mb-4 border border-gray-300 rounded-lg text-base focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
                 <p class="text-sm italic text-gray-500 mb-4">Enter the content for this custom section below.</p>
                 <textarea id="custom-notes-entry" rows="5" placeholder="Enter notes here..."
-                          class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+                      class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
             <!-- Save Button now calls saveDiaryEntry -->
@@ -250,7 +271,7 @@ Time    Activity    Detail
         // --- CDN Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         // ----------------------------------------------------------------------------------
 
         // setLogLevel('Debug'); // Uncomment for detailed console logging
@@ -281,6 +302,7 @@ Time    Activity    Detail
         const saveButton = document.getElementById('save-button');
         const historyDropdownEl = document.getElementById('history-dropdown');
         const historyStatusEl = document.getElementById('history-status');
+        const workItemsContainer = document.getElementById('work-items-container');
 
         // Check if running in the secure Canvas environment
         const isRunningInCanvas = typeof __firebase_config !== 'undefined';
@@ -436,11 +458,14 @@ Time    Activity    Detail
             try {
                 // 1. Create the query: collection -> order by timestamp descending -> limit to 10
                 const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
+                
+                // Querying all docs, ordered by the built-in timestamp field.
                 const q = query(entriesRef, orderBy('timestamp', 'desc'), limit(10));
 
                 // 2. Set up the real-time listener
                 unsubscribeHistory = onSnapshot(q, (snapshot) => {
-                    historyDropdownEl.innerHTML = '<option value="" disabled selected>Select a past entry...</option>';
+                    historyDropdownEl.innerHTML = '<option value="" value="">Select a past entry...</option>';
+                    historyDropdownEl.value = ""; // Ensure nothing is selected
                     loadedEntries = {};
                     
                     if (snapshot.empty) {
@@ -460,6 +485,7 @@ Time    Activity    Detail
                         // Create the dropdown option
                         const option = document.createElement('option');
                         option.value = docId;
+                        // Use the date (docId) as it's guaranteed to be unique and the date the entry represents
                         option.textContent = `${data.fullDateString} (Day ${data.consecutiveDay})`;
                         historyDropdownEl.appendChild(option);
                     });
@@ -475,7 +501,27 @@ Time    Activity    Detail
         }
 
         /**
-         * Loads an entry's data into the main form fields.
+         * Creates a single HTML element for a dynamic work item.
+         */
+        function createWorkItemElement(task = { isCompleted: false, title: '', detail: '' }) {
+            const container = document.createElement('div');
+            container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
+            
+            container.innerHTML = `
+                <div class="flex items-start space-x-3 mb-2">
+                    <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                    <input type="text" value="${task.title}" placeholder="Task Title" 
+                           class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                    <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+                </div>
+                <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
+                          class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-base resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail}</textarea>
+            `;
+            return container;
+        }
+
+        /**
+         * Clears and populates the form with data from a loaded entry.
          */
         function loadEntryIntoForm(data) {
             // Update Date and Counts
@@ -487,7 +533,6 @@ Time    Activity    Detail
             // Update Text Areas
             document.getElementById('reflection-entry').value = data.reflection;
             document.getElementById('life-map-log').value = data.lifeMap;
-            document.getElementById('work-entry').value = data.work;
             document.getElementById('week-goals-entry').value = data.weekGoals;
             document.getElementById('gamification-notes-entry').value = data.gamificationNotes;
             document.getElementById('long-term-plan-entry').value = data.longTermPlan;
@@ -496,6 +541,19 @@ Time    Activity    Detail
             document.getElementById('japanese-practice-entry').value = data.japanesePractice;
             document.getElementById('custom-notes-title').value = data.customNotesTitle;
             document.getElementById('custom-notes-entry').value = data.customNotes;
+            
+            // --- NEW: Load Dynamic Work Log ---
+            workItemsContainer.innerHTML = '';
+            if (Array.isArray(data.work)) {
+                 data.work.forEach(task => {
+                    workItemsContainer.appendChild(createWorkItemElement(task));
+                 });
+            } else {
+                // Handle case where old data might be a single string (backward compatibility)
+                const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Work Log (from previous format)', detail: data.work || '' });
+                workItemsContainer.appendChild(defaultTask);
+            }
+            // --- END NEW ---
 
             setStatus(`Successfully loaded entry from ${data.fullDateString}. Remember to generate and save if you make changes.`, 'info');
         }
@@ -564,6 +622,42 @@ Time    Activity    Detail
                 dateInput.dataset.fullDate = "";
             }
         }
+        
+        // --- NEW DYNAMIC WORK LOG FUNCTIONS ---
+        window.addWorkItem = function() {
+            workItemsContainer.appendChild(createWorkItemElement());
+        }
+
+        window.removeWorkItem = function(buttonEl) {
+            const container = buttonEl.closest('.work-item-container');
+            container.remove();
+        }
+
+        function collectWorkItems() {
+            const items = [];
+            const workItemElements = workItemsContainer.querySelectorAll('.work-item-container');
+            
+            workItemElements.forEach(container => {
+                const titleInput = container.querySelector('.task-title-input');
+                const detailInput = container.querySelector('.task-detail-input');
+                const checkbox = container.querySelector('.task-status-checkbox');
+
+                const title = titleInput ? titleInput.value.trim() : '';
+                const detail = detailInput ? detailInput.value.trim() : '';
+                const isCompleted = checkbox ? checkbox.checked : false;
+
+                // Only save items that have either a title or details
+                if (title.length > 0 || detail.length > 0) {
+                    items.push({
+                        isCompleted: isCompleted,
+                        title: title,
+                        detail: detail
+                    });
+                }
+            });
+            return items;
+        }
+        // --- END NEW DYNAMIC WORK LOG FUNCTIONS ---
 
         window.saveDiaryEntry = async function() {
             if (!db || !userId) {
@@ -572,15 +666,17 @@ Time    Activity    Detail
             }
 
             const dateInput = document.getElementById('date-input');
+            const workItems = collectWorkItems(); // Collect the dynamic work items
+
             const data = {
                 timestamp: new Date().toISOString(), 
-                date: dateInput.value, 
+                date: dateInput.value, // YYYY-MM-DD (Used as Document ID for uniqueness)
                 fullDateString: dateInput.dataset.fullDate, 
                 consecutiveDay: document.getElementById('consecutive-day-input').value.trim(),
                 accumulatedCount: document.getElementById('accumulated-count-input').value.trim(),
                 reflection: document.getElementById('reflection-entry').value.trim(),
                 lifeMap: document.getElementById('life-map-log').value.trim(),
-                work: document.getElementById('work-entry').value.trim(),
+                work: workItems, // Store the array of objects
                 weekGoals: document.getElementById('week-goals-entry').value.trim(),
                 gamificationNotes: document.getElementById('gamification-notes-entry').value.trim(), 
                 longTermPlan: document.getElementById('long-term-plan-entry').value.trim(),
@@ -595,8 +691,17 @@ Time    Activity    Detail
             
             try {
                 setStatus("Saving entry to cloud storage...", 'info');
+                
+                // Firestore path: /artifacts/{finalAppId}/users/{userId}/diary_entries/{date}
                 const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
-                await addDoc(entriesRef, data);
+                
+                // STEP 1: Use the date (YYYY-MM-DD) as the document ID
+                const docId = data.date;
+                const entryDocRef = doc(entriesRef, docId);
+                
+                // STEP 2: Use setDoc to overwrite if it exists (ensures one-per-day)
+                await setDoc(entryDocRef, data);
+
                 setStatus(`Entry successfully saved! Date: ${data.fullDateString}.`, 'success');
             } catch (error) {
                 setStatus(`Save Failed! Error: ${error.message}`, 'error');
@@ -628,9 +733,19 @@ Time    Activity    Detail
                 output += data.lifeMap + '\n\n';
             }
 
-            if (data.work.length > 0) {
+            // Work Log output logic changed to handle the array of tasks
+            if (Array.isArray(data.work) && data.work.length > 0) {
                 output += '# work\n';
-                output += data.work + '\n\n';
+                data.work.forEach(task => {
+                    const status = task.isCompleted ? '✓ ' : '— ';
+                    output += status + task.title + '\n';
+                    if (task.detail && task.detail.length > 0) {
+                        output += '  -> ' + task.detail.replace(/\n/g, '\n  -> ') + '\n\n'; // Indent details
+                    } else {
+                         output += '\n';
+                    }
+                });
+                output += '\n';
             }
             
             if (data.weekGoals.length > 0) {
