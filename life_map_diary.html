@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Life Map & Daily Log</title>
+    <!-- Load Tailwind CSS for modern, responsive styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for better readability of the monospace output */
@@ -62,17 +63,21 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 bg-gray-50">
+    <!-- Header - Now spans wider for the two-column view -->
     <header class="w-full max-w-3xl md:max-w-6xl bg-blue-700 text-white p-6 rounded-t-xl shadow-xl text-center">
         <h1 class="text-3xl font-extrabold mb-1">Daily Log & Life Map</h1>
         
+        <!-- Editable Date and Count Inputs -->
         <div class="flex flex-wrap justify-center space-x-2 space-y-2 sm:space-y-0 text-sm mt-3">
             
+            <!-- Date Input with Native Picker and Dynamic Weekday -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Date:</span>
                 <input type="date" id="date-input" class="p-1 w-32 text-sm text-gray-800 rounded focus:ring-blue-300 focus:border-blue-300 border-none">
                 <span id="weekday-display" class="text-sm"></span>
             </div>
             
+            <!-- Consecutive Day Input with Custom Buttons -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Day:</span>
                 <div class="flex items-stretch rounded overflow-hidden">
@@ -82,6 +87,7 @@
                 </div>
             </div>
 
+            <!-- Accumulated Count Input with Custom Buttons -->
             <div class="flex items-center space-x-1">
                 <span class="font-medium">Count:</span>
                 <div class="flex items-stretch rounded overflow-hidden">
@@ -92,6 +98,7 @@
             </div>
         </div>
 
+        <!-- Authentication Area -->
         <div class="mt-4 border-t border-blue-600 pt-3 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <p id="auth-status-display" class="text-sm font-medium">Authenticating...</p>
             <button id="auth-button" onclick="signInWithGoogle()" class="px-4 py-2 bg-white text-blue-700 rounded-lg font-bold hover:bg-gray-100 transition duration-150 shadow-md disabled:opacity-50" disabled>
@@ -100,31 +107,39 @@
         </div>
     </header>
 
+    <!-- Status Message -->
     <div id="status-message" class="w-full max-w-3xl md:max-w-6xl p-3 text-center text-sm font-semibold rounded-t-none bg-yellow-100 text-yellow-800 hidden">
         Connecting to storage...
     </div>
 
+    <!-- HISTORY SECTION (New position, Full-width band below header/status) -->
     <section id="history-section" class="w-full max-w-3xl md:max-w-6xl mx-auto p-5 rounded-b-xl border border-blue-200 bg-white shadow-xl mb-6">
         <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-300 pb-2 mb-4">🕰️ Past Entries History</h2>
         
+        <!-- DROPDOWN SELECT BOX -->
         <select id="history-dropdown" onchange="handleHistorySelect()">
             <option value="" disabled selected>Select a past entry...</option>
         </select>
 
+        <!-- Status message specifically for the history loading -->
         <p id="history-status" class="text-gray-500 italic mt-2">Sign in to load history...</p>
         
     </section>
 
+    <!-- MAIN CONTENT WRAPPER -->
     <div class="w-full max-w-3xl md:max-w-6xl mx-auto">
         
+        <!-- MAIN CONTENT: Form and Output (Full Width of wrapper) -->
         <main class="w-full p-6 bg-white shadow-xl rounded-xl mb-8">
             
+            <!-- Section 1: Story, Emotion, Gratitude, Reflection -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">✨ Story, Emotion, Gratitude, Reflection</h2>
                 <textarea id="reflection-entry" rows="8" placeholder="How was your day? What did you feel? What are you grateful for?"
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Section 2: Life Map (Daily Architecture) -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-2">🗺️ Life Map (Daily Architecture)</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Log daily adherence and notes based on your routine.</p>
@@ -154,10 +169,13 @@ Time    Activity    Detail
 </textarea>
             </section>
 
+            <!-- Section 3: Work Log - NOW DYNAMIC LIST -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💼 Work Log (Dynamic Tasks)</h2>
                 
+                <!-- Container for dynamic task rows -->
                 <div id="work-items-container" class="space-y-4 mb-4">
+                    <!-- Default/Sample Item -->
                     <div class="work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
                         <div class="flex items-start space-x-3 mb-2">
                             <input type="checkbox" class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
@@ -166,7 +184,7 @@ Time    Activity    Detail
                             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                         </div>
                         <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
-                                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-base resize-y focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500"></textarea>
                     </div>
                 </div>
 
@@ -175,6 +193,7 @@ Time    Activity    Detail
                 </button>
             </section>
             
+            <!-- Section 4: WEEK GOALS -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals (W44)</h2>
                 <p class="text-sm italic text-gray-500 mb-4">W44 goals and important plans.</p>
@@ -182,6 +201,7 @@ Time    Activity    Detail
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- SECTION 5: GAMIFICATION NOTES -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💡 Gamification Notes</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Core Drives, Octalysis ideas, or other motivational strategies.</p>
@@ -189,32 +209,38 @@ Time    Activity    Detail
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Section 6: PERSONAL LONG TERM PLAN -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">⏳ Personal Long Term Plan</h2>
                 <textarea id="long-term-plan-entry" rows="5" placeholder="e.g., Performance App, Robot App, English movies, Japanese..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Section 7: PERSONAL SHORT TERM PLAN -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🚀 Personal Short Term Plan</h2>
                 <textarea id="short-term-plan-entry" rows="3" placeholder="e.g., Set gamification for Cecilia..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
             
+            <!-- Section 8: ENGLISH PRACTICE -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇬🇧 English Practice</h2>
                 <textarea id="english-practice-entry" rows="3" placeholder="Log today's English learning activity and notes..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Section 9: JAPANESE PRACTICE -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇯🇵 Japanese Practice</h2>
                 <textarea id="japanese-practice-entry" rows="3" placeholder="Log today's Japanese learning, e.g., vocabulary, grammar, lyrics..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Section 10: CUSTOM END NOTES (User-defined title) -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">📝 Custom Daily Notes Header</h2>
+                <!-- Input for the user-defined Markdown Title -->
                 <input type="text" id="custom-notes-title" placeholder="Enter the header title for the final entry (e.g., Final Checklist or New Ideas)"
                        class="w-full p-3 mb-4 border border-gray-300 rounded-lg text-base focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
                 <p class="text-sm italic text-gray-500 mb-4">Enter the content for this custom section below.</p>
@@ -222,10 +248,12 @@ Time    Activity    Detail
                       class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
+            <!-- Save Button now calls saveDiaryEntry -->
             <button id="save-button" onclick="saveDiaryEntry()" class="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl transition-colors shadow-lg hover:bg-green-700 disabled:opacity-50" disabled>
                 💾 Generate, Save & Copy Entry
             </button>
             
+            <!-- Log Output -->
             <section id="output-section" class="mt-6">
                 <h2 class="text-xl text-gray-800 font-semibold border-b border-gray-200 pb-2 mb-4">📝 Generated Entry (Copy/Paste)</h2>
                 <textarea id="diary-output" rows="15" readonly 
@@ -239,6 +267,7 @@ Time    Activity    Detail
         <p>Built for the Life Map Logger &copy; 2025</p>
     </footer>
 
+    <!-- JavaScript Logic & Firebase Integration -->
     <script type="module">
         // --- CDN Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -645,6 +674,43 @@ Time    Activity    Detail
                 dateInput.dataset.fullDate = "";
             }
         }
+        
+        // --- DYNAMIC WORK LOG FUNCTIONS (Explicitly attached to window) ---
+        // FIX for ReferenceError on GitHub Pages!
+        window.addWorkItem = function() {
+            workItemsContainer.appendChild(createWorkItemElement());
+        }
+
+        window.removeWorkItem = function(buttonEl) {
+            const container = buttonEl.closest('.work-item-container');
+            container.remove();
+        }
+
+        function collectWorkItems() {
+            const items = [];
+            const workItemElements = workItemsContainer.querySelectorAll('.work-item-container');
+            
+            workItemElements.forEach(container => {
+                const titleInput = container.querySelector('.task-title-input');
+                const detailInput = container.querySelector('.task-detail-input');
+                const checkbox = container.querySelector('.task-status-checkbox');
+
+                const title = titleInput ? titleInput.value.trim() : '';
+                const detail = detailInput ? detailInput.value.trim() : '';
+                const isCompleted = checkbox ? checkbox.checked : false;
+
+                // Only save items that have either a title or details
+                if (title.length > 0 || detail.length > 0) {
+                    items.push({
+                        isCompleted: isCompleted,
+                        title: title,
+                        detail: detail
+                    });
+                }
+            });
+            return items;
+        }
+        // --- END DYNAMIC WORK LOG FUNCTIONS ---
 
         window.saveDiaryEntry = async function() {
             if (!db || !userId) {
