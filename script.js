@@ -293,12 +293,36 @@ function createWorkItemElement(task = { isCompleted: false, title: '', detail: '
             <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
             <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title" 
                    class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+            <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
+            <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
         </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
     return container;
+}
+
+/**
+ * Moves a work item up in the list.
+ * @param {HTMLElement} buttonEl - The button element that was clicked.
+ */
+window.moveWorkItemUp = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    if (container.previousElementSibling) {
+        container.parentNode.insertBefore(container, container.previousElementSibling);
+    }
+}
+
+/**
+ * Moves a work item down in the list.
+ * @param {HTMLElement} buttonEl - The button element that was clicked.
+ */
+window.moveWorkItemDown = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    if (container.nextElementSibling) {
+        container.parentNode.insertBefore(container.nextElementSibling, container);
+    }
 }
 
 /**
