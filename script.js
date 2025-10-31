@@ -361,6 +361,9 @@ function loadEntryIntoForm(data) {
          // Load one empty item if no work items exist
          workItemsContainer.appendChild(createWorkItemElement());
     }
+
+    // After populating, resize all textareas to fit their new content
+    document.querySelectorAll('textarea').forEach(autoResizeTextarea);
 }
 
 // --- Explicitly attach window functions ---
@@ -606,29 +609,50 @@ function generateDiaryOutput(data) {
     }
 }
 
-// Initialize on load is now correctly placed inside the module
-window.addEventListener('load', () => {
-    // Function to format the current date info and set input defaults (moved here)
-    function updateDateInfo() {
-        const today = new Date();
-        const isoDate = today.toISOString().substring(0, 10);
+        /**
+         * Dynamically adjusts the height of a textarea to fit its content.
+         * @param {HTMLTextAreaElement} textarea - The textarea element to resize.
+         */
+        function autoResizeTextarea(textarea) {
+            // Temporarily reset height to calculate the new scrollHeight
+            textarea.style.height = 'auto';
+            // Set the height to the scrollHeight to fit the content, adding a little buffer
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
         
-        // Set initial values for the inputs (pre-populating with suggested next counts)
-        document.getElementById('date-input').value = isoDate;
-        document.getElementById('consecutive-day-input').value = 32; 
-        document.getElementById('accumulated-count-input').value = 55; 
-        
-        window.updateWeekday(); // Call the globally attached function
-    }
-    
-    // Attach the date change listener programmatically
-    document.getElementById('date-input').addEventListener('change', window.updateWeekday);
+        // Initialize on load is now correctly placed inside the module
+        window.addEventListener('load', () => {
+            // Function to format the current date info and set input defaults (moved here)
+            function updateDateInfo() {
+                const today = new Date();
+                const isoDate = today.toISOString().substring(0, 10);
+                
+                // Set initial values for the inputs (pre-populating with suggested next counts)
+                document.getElementById('date-input').value = isoDate;
+                document.getElementById('consecutive-day-input').value = 32; 
+                document.getElementById('accumulated-count-input').value = 55; 
+                
+                window.updateWeekday(); // Call the globally attached function
+            }
+            
+            // Attach the date change listener programmatically
+            document.getElementById('date-input').addEventListener('change', window.updateWeekday);
 
-    // Load one empty item to start the work log, if the container is empty
-    if (workItemsContainer.children.length === 0) {
-        workItemsContainer.appendChild(createWorkItemElement());
-    }
+            // Load one empty item to start the work log, if the container is empty
+            if (workItemsContainer.children.length === 0) {
+                workItemsContainer.appendChild(createWorkItemElement());
+            }
 
-    updateDateInfo(); // Call the local setup function
-    initializeFirebase();
-});
+            // Set up event delegation for auto-resizing textareas
+            document.body.addEventListener('input', (event) => {
+                if (event.target.tagName.toLowerCase() === 'textarea') {
+                    autoResizeTextarea(event.target);
+                }
+            });
+
+            // Initial resize for all textareas on page load
+            document.querySelectorAll('textarea').forEach(autoResizeTextarea);
+
+            updateDateInfo(); // Call the local setup function
+            initializeFirebase();
+        });
