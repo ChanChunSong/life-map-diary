@@ -1,0 +1,53 @@
+/* Custom styles for better readability of the monospace output */
+body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+.font-mono-custom { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+/* Style the inputs inside the header */
+#date-input, .count-input {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1f2937; /* Dark gray text */
+    transition: all 0.2s;
+}
+#date-input:focus, .count-input:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5); /* Indigo focus ring */
+}
+
+/* Hide default number input arrows for clean custom buttons */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Styling for the non-editable weekday span */
+#weekday-display {
+    background-color: white;
+    padding: 4px 8px;
+    border-radius: 0.25rem;
+    color: #4b5563; /* Gray-700 */
+    font-weight: 500;
+}
+
+/* Ensure dropdown fits and looks good */
+#history-dropdown {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: white;
+    font-size: 14px;
+}
+
+/* Styling for the history status element inside the history section */
+#history-status {
+    font-size: 12px;
+    color: #4b5563;
+}
+
+/* Custom style for the work list items */
+.work-item-container {
+    transition: background-color 0.2s;
+}

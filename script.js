@@ -1,0 +1,610 @@
+// --- CDN Imports ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// ----------------------------------------------------------------------------------
+
+// setLogLevel('Debug'); // Uncomment for detailed console logging
+
+// ----------------------------------------------------------------------------------
+// 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
+const PUBLIC_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+    authDomain: "life-map-diary-logger.firebaseapp.com",
+    projectId: "life-map-diary-logger",
+    storageBucket: "life-map-diary-logger.firebasestorage.app",
+    messagingSenderId: "957220017803",
+    appId: "1:957220017803:web:fa3190aac407fd8c0b268e",
+    measurementId: "G-Q9N5JKHTQ3"
+};
+// ----------------------------------------------------------------------------------
+
+let db;
+let auth;
+let userId = null; 
+let unsubscribeHistory = null; 
+let loadedEntries = {}; // Global cache for loaded documents keyed by doc.id
+
+// UI elements
+const statusMessageEl = document.getElementById('status-message');
+const authStatusDisplay = document.getElementById('auth-status-display');
+const authButton = document.getElementById('auth-button');
+const saveButton = document.getElementById('save-button');
+const historyDropdownEl = document.getElementById('history-dropdown');
+const historyStatusEl = document.getElementById('history-status');
+const workItemsContainer = document.getElementById('work-items-container');
+
+// Check if running in the secure Canvas environment
+const isRunningInCanvas = typeof __firebase_config !== 'undefined';
+
+let finalFirebaseConfig = PUBLIC_FIREBASE_CONFIG; // Start with the public keys by default
+let finalAppId = PUBLIC_FIREBASE_CONFIG.projectId;
+let initialAuthToken = null;
+
+if (isRunningInCanvas) {
+    finalFirebaseConfig = JSON.parse(__firebase_config);
+    finalAppId = (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+    initialAuthToken = (typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null);
+} else {
+     // If outside canvas, use the provided public config
+     finalFirebaseConfig = PUBLIC_FIREBASE_CONFIG;
+}
+
+/**
+ * Updates the UI based on the user's authentication state.
+ * @param {object | null} user - The authenticated Firebase user object or null.
+ */
+function updateUserUI(user) {
+    if (user) {
+        const name = user.displayName || user.email;
+        authStatusDisplay.textContent = `Signed in as: ${name}`;
+        authButton.textContent = "Sign Out";
+        authButton.onclick = window.signOutUser;
+        saveButton.textContent = "💾 Generate, Save & Copy Entry";
+        saveButton.classList.remove('bg-gray-400');
+        saveButton.classList.add('bg-green-600', 'hover:bg-green-700');
+        saveButton.disabled = false;
+        
+        // 1. Auto-load the very latest entry immediately (one-time fetch)
+        window.loadLatestEntry();
+        
+        // 2. Start the real-time listener for the history dropdown
+        window.loadPastEntries();
+    } else {
+        authStatusDisplay.textContent = "Please sign in to save data.";
+        authButton.textContent = "Sign in with Google";
+        authButton.onclick = window.signInWithGoogle;
+        saveButton.textContent = "🔐 Please Sign In to Save Entry";
+        saveButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+        saveButton.classList.add('bg-gray-400');
+        saveButton.disabled = true;
+        
+        // Stop listening and clear history on sign-out
+        if (unsubscribeHistory) {
+            unsubscribeHistory(); 
+            unsubscribeHistory = null;
+        }
+        historyDropdownEl.innerHTML = '<option value="" disabled selected>Select a past entry...</option>';
+        historyStatusEl.textContent = "Sign in to load history...";
+        loadedEntries = {}; // Clear cache
+    }
+    authButton.disabled = false;
+}
+
+/**
+ * Displays a status message to the user.
+ */
+function setStatus(message, type = 'info') {
+    statusMessageEl.textContent = message;
+    statusMessageEl.className = 'w-full max-w-3xl md:max-w-6xl p-3 text-center text-sm font-semibold rounded-t-none';
+
+    if (type === 'success') {
+        statusMessageEl.classList.add('bg-green-100', 'text-green-800');
+    } else if (type === 'error') {
+        statusMessageEl.classList.add('bg-red-100', 'text-red-800');
+    } else {
+        statusMessageEl.classList.add('bg-yellow-100', 'text-yellow-800');
+    }
+    statusMessageEl.classList.remove('hidden');
+}
+
+/**
+ * Initializes Firebase and sets up the authentication listener.
+ */
+async function initializeFirebase() {
+    // Check if public config is still the placeholder (only relevant when NOT in Canvas)
+    if (!isRunningInCanvas && finalFirebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+        const localMessage = "⚠️ Storage Disabled: Please replace the placeholder keys in the script with your actual Firebase configuration.";
+        setStatus(localMessage, 'error');
+        console.error("Firebase Initialization Skipped:", localMessage);
+        return;
+    }
+    
+    try {
+        const app = initializeApp(finalFirebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        // Set up the listener for auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                setStatus("Storage ready. Signed in.", 'success');
+                updateUserUI(user);
+            } else {
+                userId = null;
+                setStatus("Ready for sign-in.", 'info');
+                updateUserUI(null);
+            }
+        });
+
+        // Only sign in with custom token in the secure canvas environment
+        if (isRunningInCanvas && initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+        }
+        
+        // Enable the button and set the status explicitly after init
+        authButton.disabled = false;
+        if (!auth.currentUser) {
+            authStatusDisplay.textContent = "Ready to sign in.";
+        }
+
+    } catch (error) {
+        setStatus(`Initialization Failed: ${error.message}`, 'error');
+        console.error("Firebase Init Error:", error);
+        authButton.disabled = true;
+        authStatusDisplay.textContent = "Authentication Failed.";
+    }
+}
+
+/**
+ * Handles selection change in the history dropdown.
+ */
+window.handleHistorySelect = function() {
+    const docId = historyDropdownEl.value;
+    if (docId && loadedEntries[docId]) {
+        const data = loadedEntries[docId];
+         // Use custom modal prompt instead of alert/confirm
+        const loadConfirmed = window.confirm(`Load entry from ${data.fullDateString} into the current form? Any unsaved changes will be lost.`);
+        if (loadConfirmed) {
+            loadEntryIntoForm(data);
+            setStatus(`Entry from ${data.fullDateString} loaded successfully.`, 'info');
+        }
+    }
+}
+
+/**
+ * Loads the single most recent entry into the form (one-time fetch).
+ */
+window.loadLatestEntry = async function() {
+    if (!db || !userId) return;
+
+    try {
+        // Query for only the newest entry
+        const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
+        const q = query(entriesRef, orderBy('timestamp', 'desc'), limit(1));
+        
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const latestEntry = snapshot.docs[0].data();
+            const latestDocId = snapshot.docs[0].id; // Get the ID to select in the dropdown
+            
+            loadEntryIntoForm(latestEntry);
+            
+            // Set the dropdown to the loaded item's ID
+            historyDropdownEl.value = latestDocId;
+            
+            setStatus(`Latest entry from ${latestEntry.fullDateString} loaded automatically.`, 'info');
+        } else {
+            setStatus("No previous entries found. Starting fresh.", 'info');
+        }
+    } catch (error) {
+        setStatus(`Error loading latest entry: ${error.message}`, 'error');
+        console.error("Firestore Latest Load Error:", error);
+    }
+}
+
+/**
+ * Loads the last 10 entries from Firestore using a real-time listener (onSnapshot).
+ */
+window.loadPastEntries = function() {
+    if (!db || !userId) return;
+
+    // Clear previous listener if it exists
+    if (unsubscribeHistory) {
+        unsubscribeHistory();
+    }
+
+    // Clear dropdown and cache
+    historyDropdownEl.innerHTML = '<option value="" disabled selected>Select a past entry...</option>';
+    loadedEntries = {};
+    historyStatusEl.textContent = "Loading past entries...";
+    
+    try {
+        // 1. Create the query: collection -> order by timestamp descending -> limit to 10
+        const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
+        
+        // Querying all docs, ordered by the built-in timestamp field.
+        const q = query(entriesRef, orderBy('timestamp', 'desc'), limit(10));
+
+        // 2. Set up the real-time listener
+        unsubscribeHistory = onSnapshot(q, (snapshot) => {
+            
+            // Preserve selected value before clearing to handle real-time updates
+            const selectedDocId = historyDropdownEl.value;
+
+            historyDropdownEl.innerHTML = '<option value="" disabled selected>Select a past entry...</option>';
+            historyDropdownEl.value = ""; // Ensure nothing is selected
+            loadedEntries = {};
+            
+            if (snapshot.empty) {
+                historyStatusEl.textContent = "No past entries found yet. Save one!";
+                return;
+            }
+
+            historyStatusEl.textContent = `${snapshot.docs.length} recent entries loaded.`;
+            
+            snapshot.forEach((doc, index) => {
+                const data = doc.data();
+                const docId = doc.id;
+                
+                // Cache the data
+                loadedEntries[docId] = data;
+
+                // Create the dropdown option
+                const option = document.createElement('option');
+                option.value = docId;
+                option.textContent = `${data.fullDateString} (Day ${data.consecutiveDay})`;
+                historyDropdownEl.appendChild(option);
+            });
+            
+            // Re-select the previously selected item, if it exists, or the item loaded by loadLatestEntry
+            // Since loadLatestEntry runs first and sets the value, this restores it after the list rebuilds.
+            if (loadedEntries[selectedDocId]) {
+                historyDropdownEl.value = selectedDocId;
+            } else if (historyDropdownEl.value === "") {
+                 // Fallback: If nothing is selected, select the newest entry (first one in the list)
+                 historyDropdownEl.value = snapshot.docs[0].id;
+            }
+
+
+        }, (error) => {
+            historyStatusEl.textContent = `Error loading history: ${error.message}`;
+            console.error("Firestore History Error:", error);
+        });
+
+    } catch (e) {
+        historyStatusEl.textContent = `Error preparing history load: ${e.message}`;
+        console.error("Load History Setup Error:", e);
+    }
+}
+
+/**
+ * Creates a single HTML element for a dynamic work item.
+ */
+function createWorkItemElement(task = { isCompleted: false, title: '', detail: '' }) {
+    const container = document.createElement('div');
+    container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
+    
+    // Use innerHTML for complex structure, ensuring proper quoting for attributes
+    container.innerHTML = `
+        <div class="flex items-start space-x-3 mb-2">
+            <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+            <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title" 
+                   class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+            <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+        </div>
+        <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
+                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+    `;
+    return container;
+}
+
+/**
+ * Clears and populates the form with data from a loaded entry.
+ */
+function loadEntryIntoForm(data) {
+    // Update Date and Counts
+    document.getElementById('date-input').value = data.date;
+    document.getElementById('consecutive-day-input').value = data.consecutiveDay;
+    document.getElementById('accumulated-count-input').value = data.accumulatedCount;
+    window.updateWeekday(); // Ensure the weekday display is updated
+
+    // Update Text Areas
+    document.getElementById('reflection-entry').value = data.reflection || '';
+    document.getElementById('life-map-log').value = data.lifeMap || '';
+    document.getElementById('week-goals-entry').value = data.weekGoals || '';
+    document.getElementById('gamification-notes-entry').value = data.gamificationNotes || '';
+    document.getElementById('long-term-plan-entry').value = data.longTermPlan || '';
+    document.getElementById('short-term-plan-entry').value = data.shortTermPlan || '';
+    document.getElementById('english-practice-entry').value = data.englishPractice || '';
+    document.getElementById('japanese-practice-entry').value = data.japanesePractice || '';
+    document.getElementById('custom-notes-title').value = data.customNotesTitle || '';
+    document.getElementById('custom-notes-entry').value = data.customNotes || '';
+    
+    // --- Load Dynamic Work Log ---
+    workItemsContainer.innerHTML = '';
+    if (Array.isArray(data.work) && data.work.length > 0) {
+         data.work.forEach(task => {
+            workItemsContainer.appendChild(createWorkItemElement(task));
+         });
+    } else if (data.work && typeof data.work === 'string' && data.work.length > 0) {
+        // Backward compatibility for old single-string work log
+        const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Previous Work Log (converted)', detail: data.work });
+        workItemsContainer.appendChild(defaultTask);
+    } else {
+         // Load one empty item if no work items exist
+         workItemsContainer.appendChild(createWorkItemElement());
+    }
+}
+
+// --- Explicitly attach window functions ---
+
+window.signInWithGoogle = async function() {
+    if (!auth) { setStatus("Error: Authentication not initialized.", 'error'); return; }
+    try {
+        setStatus("Opening Google sign-in window...", 'info');
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            setStatus(`Sign-in Failed: ${error.message}`, 'error');
+            console.error("Google Sign-in Error:", error);
+        } else { setStatus("Sign-in cancelled.", 'info'); }
+    }
+}
+
+window.signOutUser = async function() {
+    if (!auth) return;
+    try {
+        await signOut(auth);
+        setStatus("Successfully signed out.", 'success');
+    } catch (error) {
+        setStatus(`Sign-out Failed: ${error.message}`, 'error');
+        console.error("Sign-out Error:", error);
+    }
+}
+
+window.changeCount = function(inputId, delta) {
+    const input = document.getElementById(inputId);
+    let currentValue = parseInt(input.value) || 0;
+    let newValue = currentValue + delta;
+    
+    if (newValue < 1) {
+        newValue = 1;
+    }
+    
+    input.value = newValue;
+}
+
+window.updateWeekday = function() {
+    const dateInput = document.getElementById('date-input');
+    const weekdayDisplay = document.getElementById('weekday-display');
+    const dateValue = dateInput.value; // Format: YYYY-MM-DD
+
+    if (dateValue) {
+        const date = new Date(dateValue.replace(/-/g, '/'));
+        
+        // Format YYYY/MM/DD
+        const [year, month, day] = dateValue.split('-');
+        const formattedDate = `${year}/${month}/${day}`;
+        
+        // Get the weekday
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+        
+        // Store the full formatted date string for easy retrieval
+        const fullDateString = `${formattedDate}, ${weekday}`;
+        dateInput.dataset.fullDate = fullDateString;
+
+        weekdayDisplay.textContent = weekday;
+    } else {
+        weekdayDisplay.textContent = "";
+        dateInput.dataset.fullDate = "";
+    }
+}
+
+// --- DYNAMIC WORK LOG FUNCTIONS (Explicitly attached to window) ---
+// FIX for ReferenceError on GitHub Pages!
+window.addWorkItem = function() {
+    workItemsContainer.appendChild(createWorkItemElement());
+}
+
+window.removeWorkItem = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    container.remove();
+}
+
+function collectWorkItems() {
+    const items = [];
+    const workItemElements = workItemsContainer.querySelectorAll('.work-item-container');
+    
+    workItemElements.forEach(container => {
+        const titleInput = container.querySelector('.task-title-input');
+        const detailInput = container.querySelector('.task-detail-input');
+        const checkbox = container.querySelector('.task-status-checkbox');
+
+        const title = titleInput ? titleInput.value.trim() : '';
+        const detail = detailInput ? detailInput.value.trim() : '';
+        const isCompleted = checkbox ? checkbox.checked : false;
+
+        // Only save items that have either a title or details
+        if (title.length > 0 || detail.length > 0) {
+            items.push({
+                isCompleted: isCompleted,
+                title: title,
+                detail: detail
+            });
+        }
+    });
+    return items;
+}
+// --- END DYNAMIC WORK LOG FUNCTIONS ---
+
+window.saveDiaryEntry = async function() {
+    if (!db || !userId) {
+        setStatus("Error: Cannot save. Please ensure you are signed in.", 'error'); 
+        return;
+    }
+
+    const dateInput = document.getElementById('date-input');
+    const workItems = collectWorkItems(); // Collect the dynamic work items
+
+    const data = {
+        timestamp: new Date().toISOString(), 
+        date: dateInput.value, // YYYY-MM-DD (Used as Document ID for uniqueness)
+        fullDateString: dateInput.dataset.fullDate, 
+        consecutiveDay: document.getElementById('consecutive-day-input').value.trim(),
+        accumulatedCount: document.getElementById('accumulated-count-input').value.trim(),
+        reflection: document.getElementById('reflection-entry').value.trim(),
+        lifeMap: document.getElementById('life-map-log').value.trim(),
+        work: workItems, // Store the array of objects
+        weekGoals: document.getElementById('week-goals-entry').value.trim(),
+        gamificationNotes: document.getElementById('gamification-notes-entry').value.trim(), 
+        longTermPlan: document.getElementById('long-term-plan-entry').value.trim(),
+        shortTermPlan: document.getElementById('short-term-plan-entry').value.trim(),
+        englishPractice: document.getElementById('english-practice-entry').value.trim(),
+        japanesePractice: document.getElementById('japanese-practice-entry').value.trim(),
+        customNotesTitle: document.getElementById('custom-notes-title').value.trim(),
+        customNotes: document.getElementById('custom-notes-entry').value.trim(),
+    };
+
+    generateDiaryOutput(data);
+    
+    try {
+        setStatus("Saving entry to cloud storage...", 'info');
+        
+        // Firestore path: /artifacts/{finalAppId}/users/{userId}/diary_entries/{date}
+        const entriesRef = collection(db, `artifacts/${finalAppId}/users/${userId}/diary_entries`);
+        
+        // STEP 1: Use the date (YYYY-MM-DD) as the document ID
+        const docId = data.date;
+        const entryDocRef = doc(entriesRef, docId);
+        
+        // STEP 2: Use setDoc to overwrite if it exists (ensures one-per-day)
+        await setDoc(entryDocRef, data);
+
+        setStatus(`Entry successfully saved! Date: ${data.fullDateString}.`, 'success');
+    } catch (error) {
+        setStatus(`Save Failed! Error: ${error.message}`, 'error');
+        console.error("Firestore Save Error:", error);
+    }
+}
+
+/**
+ * Generates the formatted text output.
+ */
+function generateDiaryOutput(data) {
+    let output = '';
+
+    // Date/Count Block (Always included)
+    const dateLine = `Date: ${data.fullDateString}, Consecutive Day: ${data.consecutiveDay}, Accumulated Count: ${data.accumulatedCount}`;
+    output += dateLine + '\n\n';
+    
+    // --- CONDITIONAL SECTIONS START HERE ---
+    
+    if (data.reflection.length > 0) {
+        output += '# Story, Emotion, Gratitude, Reflection\n';
+        output += data.reflection + '\n\n';
+    }
+
+    if (data.lifeMap.length > 0) {
+        output += '# Life Map (Daily Architecture)\n';
+        output += '## In this section, I want to write down the daily routine active. Those actives would be a habit.\n';
+        output += '## These routine active should have a timer to follow. That\'s the concept of regular and discipline.\n';
+        output += data.lifeMap + '\n\n';
+    }
+
+    // Work Log output logic changed to handle the array of tasks
+    if (Array.isArray(data.work) && data.work.length > 0) {
+        output += '# work\n';
+        data.work.forEach(task => {
+            const status = task.isCompleted ? '✓ ' : '— ';
+            output += status + task.title + '\n';
+            if (task.detail && task.detail.length > 0) {
+                // Use a custom tab indent for details to match your original format
+                output += '  -> ' + task.detail.replace(/\n/g, '\n  -> ') + '\n\n';
+            } else {
+                 output += '\n';
+            }
+        });
+        output += '\n';
+    }
+    
+    if (data.weekGoals.length > 0) {
+        output += '# week goals (W44) & important plan\n'; 
+        output += data.weekGoals + '\n\n';
+    }
+
+    if (data.gamificationNotes.length > 0) {
+        output += '# Gamification Note\n'; 
+        output += data.gamificationNotes + '\n\n';
+    }
+
+    if (data.longTermPlan.length > 0) {
+        output += '# personal long term plan\n';
+        output += data.longTermPlan + '\n\n';
+    }
+
+    if (data.shortTermPlan.length > 0) {
+        output += '# personal short term plan\n';
+        output += data.shortTermPlan + '\n\n';
+    }
+
+    if (data.englishPractice.length > 0) {
+        output += '# English practice\n';
+        output += data.englishPractice + '\n\n';
+    }
+
+    if (data.japanesePractice.length > 0) {
+        output += '# Japanese practice\n';
+        output += data.japanesePractice + '\n\n'; 
+    }
+
+    if (data.customNotes.length > 0) {
+        output += `# ${data.customNotesTitle}\n`; 
+        output += data.customNotes; 
+    }
+    
+    output = output.trim();
+
+    // 4. Output to the read-only text area
+    const outputArea = document.getElementById('diary-output');
+    outputArea.value = output;
+    
+    // 5. Attempt to automatically copy the text to the clipboard
+    outputArea.select();
+    outputArea.setSelectionRange(0, 99999);
+    try {
+        document.execCommand('copy');
+    } catch (err) {
+        console.warn('Automatic copy failed.');
+    }
+}
+
+// Initialize on load is now correctly placed inside the module
+window.addEventListener('load', () => {
+    // Function to format the current date info and set input defaults (moved here)
+    function updateDateInfo() {
+        const today = new Date();
+        const isoDate = today.toISOString().substring(0, 10);
+        
+        // Set initial values for the inputs (pre-populating with suggested next counts)
+        document.getElementById('date-input').value = isoDate;
+        document.getElementById('consecutive-day-input').value = 32; 
+        document.getElementById('accumulated-count-input').value = 55; 
+        
+        window.updateWeekday(); // Call the globally attached function
+    }
+    
+    // Attach the date change listener programmatically
+    document.getElementById('date-input').addEventListener('change', window.updateWeekday);
+
+    // Load one empty item to start the work log, if the container is empty
+    if (workItemsContainer.children.length === 0) {
+        workItemsContainer.appendChild(createWorkItemElement());
+    }
+
+    updateDateInfo(); // Call the local setup function
+    initializeFirebase();
+});
