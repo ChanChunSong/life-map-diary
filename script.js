@@ -511,7 +511,9 @@ window.saveDiaryEntry = async function() {
         // STEP 2: Use setDoc to overwrite if it exists (ensures one-per-day)
         await setDoc(entryDocRef, data);
 
-        setStatus(`Entry successfully saved! Date: ${data.fullDateString}.`, 'success');
+        const now = new Date();
+        const timestampString = now.toLocaleString();
+        setStatus(`Entry successfully saved! Date: ${data.fullDateString} at ${timestampString}`, 'success');
     } catch (error) {
         setStatus(`Save Failed! Error: ${error.message}`, 'error');
         console.error("Firestore Save Error:", error);
@@ -652,6 +654,14 @@ function generateDiaryOutput(data) {
 
             // Initial resize for all textareas on page load
             document.querySelectorAll('textarea').forEach(autoResizeTextarea);
+
+            // Add keyboard shortcut for saving (Ctrl+S or Cmd+S)
+            document.addEventListener('keydown', (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                    event.preventDefault(); // Prevent the browser's default save action
+                    window.saveDiaryEntry();
+                }
+            });
 
             updateDateInfo(); // Call the local setup function
             initializeFirebase();
