@@ -127,6 +127,10 @@ Time    Activity    Detail
                             <input type="checkbox" class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
                             <input type="text" placeholder="Task Title (e.g., UFS error log capture)" 
                                    class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                            <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
+                            <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
+                            <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
+                            <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
                             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                         </div>
                         <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
@@ -141,7 +145,7 @@ Time    Activity    Detail
             
             <!-- Section 4: WEEK GOALS -->
             <section class="p-5 rounded-xl border border-gray-100 mb-6">
-                <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals (W44)</h2>
+                <h2 id="week-goals-header" class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals</h2>
                 <p class="text-sm italic text-gray-500 mb-4">W44 goals and important plans.</p>
                 <textarea id="week-goals-entry" rows="16" placeholder="Update on week goals and important plans..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>

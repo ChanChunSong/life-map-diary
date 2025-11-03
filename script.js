@@ -293,14 +293,34 @@ function createWorkItemElement(task = { isCompleted: false, title: '', detail: '
             <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
             <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title" 
                    class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+            <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
             <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
             <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
+            <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
         </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
     return container;
+}
+
+/**
+ * Moves a work item to the top of the list.
+ * @param {HTMLElement} buttonEl - The button element that was clicked.
+ */
+window.moveWorkItemToTop = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    container.parentNode.prepend(container);
+}
+
+/**
+ * Moves a work item to the bottom of the list.
+ * @param {HTMLElement} buttonEl - The button element that was clicked.
+ */
+window.moveWorkItemToBottom = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    container.parentNode.appendChild(container);
 }
 
 /**
@@ -425,10 +445,29 @@ window.updateWeekday = function() {
         dateInput.dataset.fullDate = fullDateString;
 
         weekdayDisplay.textContent = weekday;
+
+        // Update week number
+        const weekNumber = getWeekNumber(date);
+        document.getElementById('week-goals-header').textContent = `🎯 Week Goals (W${weekNumber})`;
     } else {
         weekdayDisplay.textContent = "";
         dateInput.dataset.fullDate = "";
+        document.getElementById('week-goals-header').textContent = `🎯 Week Goals`;
     }
+}
+
+/**
+ * Calculates the ISO week number for a given date.
+ * Source: https://stackoverflow.com/questions/6117814/get-week-of-year-in-javascript-like-in-iso-8601-date-format
+ * @param {Date} date - The date to calculate the week number for.
+ * @returns {number} The ISO week number.
+ */
+function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 // --- DYNAMIC WORK LOG FUNCTIONS (Explicitly attached to window) ---
@@ -561,7 +600,8 @@ function generateDiaryOutput(data) {
     }
     
     if (data.weekGoals.length > 0) {
-        output += '# week goals (W44) & important plan\n'; 
+        const weekGoalsHeader = document.getElementById('week-goals-header').textContent;
+        output += `# ${weekGoalsHeader.replace('🎯 ', '')} & important plan\n`; 
         output += data.weekGoals + '\n\n';
     }
 
