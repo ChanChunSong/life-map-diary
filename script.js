@@ -286,19 +286,20 @@ window.loadPastEntries = function() {
 function createWorkItemElement(task = { title: '', detail: '' }) {
     const container = document.createElement('div');
     container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
-    
+    container.ondblclick = () => toggleTaskDetail(container);
+
     // Use innerHTML for complex structure, ensuring proper quoting for attributes
     container.innerHTML = `
         <div class="flex items-start space-x-3 mb-2">
                         <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
                                class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
-                        <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+                        <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                     </div>
-                    <div class="flex items-center justify-end space-x-2 mb-2">
-                        <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
-                        <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
-                        <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
-                        <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>        </div>
+                    <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container">
+                        <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
+                        <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
+                        <button onclick="moveWorkItemDown(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
+                        <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>        </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
@@ -474,6 +475,17 @@ function getWeekNumber(date) {
 // FIX for ReferenceError on GitHub Pages!
 window.addWorkItem = function() {
     workItemsContainer.appendChild(createWorkItemElement());
+}
+
+window.toggleTaskDetail = function(container) {
+    const detailInput = container.querySelector('.task-detail-input');
+    const controlsContainer = container.querySelector('.task-controls-container');
+    if (detailInput) {
+        detailInput.classList.toggle('hidden');
+    }
+    if (controlsContainer) {
+        controlsContainer.classList.toggle('hidden');
+    }
 }
 
 window.removeWorkItem = function(buttonEl) {
@@ -675,6 +687,28 @@ function generateDiaryOutput(data) {
             
             // Attach the date change listener programmatically
             document.getElementById('date-input').addEventListener('change', window.updateWeekday);
+
+            // Attach the "Collapse/Expand All" button listener
+            document.getElementById('toggle-all-details-button').addEventListener('click', () => {
+                const detailTextareas = document.querySelectorAll('.task-detail-input');
+                const controlsContainers = document.querySelectorAll('.task-controls-container');
+                // Determine if we should be collapsing or expanding by checking the first one
+                const shouldCollapse = !detailTextareas[0].classList.contains('hidden');
+                detailTextareas.forEach(textarea => {
+                    if (shouldCollapse) {
+                        textarea.classList.add('hidden');
+                    } else {
+                        textarea.classList.remove('hidden');
+                    }
+                });
+                controlsContainers.forEach(container => {
+                    if (shouldCollapse) {
+                        container.classList.add('hidden');
+                    } else {
+                        container.classList.remove('hidden');
+                    }
+                });
+            });
 
             // Load one empty item to start the work log, if the container is empty
             if (workItemsContainer.children.length === 0) {
