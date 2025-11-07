@@ -283,22 +283,22 @@ window.loadPastEntries = function() {
 /**
  * Creates a single HTML element for a dynamic work item.
  */
-function createWorkItemElement(task = { isCompleted: false, title: '', detail: '' }) {
+function createWorkItemElement(task = { title: '', detail: '' }) {
     const container = document.createElement('div');
     container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
     
     // Use innerHTML for complex structure, ensuring proper quoting for attributes
     container.innerHTML = `
         <div class="flex items-start space-x-3 mb-2">
-            <input type="checkbox" ${task.isCompleted ? 'checked' : ''} class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-            <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title" 
-                   class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
-            <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
-            <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
-            <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
-            <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
-            <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
-        </div>
+                        <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
+                               class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                        <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+                    </div>
+                    <div class="flex items-center justify-end space-x-2 mb-2">
+                        <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
+                        <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
+                        <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
+                        <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>        </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
@@ -488,16 +488,13 @@ function collectWorkItems() {
     workItemElements.forEach(container => {
         const titleInput = container.querySelector('.task-title-input');
         const detailInput = container.querySelector('.task-detail-input');
-        const checkbox = container.querySelector('.task-status-checkbox');
 
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
-        const isCompleted = checkbox ? checkbox.checked : false;
 
         // Only save items that have either a title or details
         if (title.length > 0 || detail.length > 0) {
             items.push({
-                isCompleted: isCompleted,
                 title: title,
                 detail: detail
             });
@@ -587,8 +584,7 @@ function generateDiaryOutput(data) {
     if (Array.isArray(data.work) && data.work.length > 0) {
         output += '# work\n';
         data.work.forEach(task => {
-            const status = task.isCompleted ? '✓ ' : '— ';
-            output += status + task.title + '\n';
+            output += task.title + '\n';
             if (task.detail && task.detail.length > 0) {
                 // Use a custom tab indent for details to match your original format
                 output += '  -> ' + task.detail.replace(/\n/g, '\n  -> ') + '\n\n';
