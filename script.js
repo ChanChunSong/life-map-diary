@@ -733,6 +733,33 @@ function generateDiaryOutput(data) {
                 }
             });
 
+            // Floating Action Button (FAB) Logic
+            const fabMainButton = document.getElementById('fab-main-button');
+            const fabContainer = document.querySelector('.fab-container');
+            const fabSaveButton = document.getElementById('fab-save-button');
+            const fabCopyButton = document.getElementById('fab-copy-button');
+
+            fabMainButton.addEventListener('click', () => {
+                fabContainer.classList.toggle('open');
+            });
+
+            fabSaveButton.addEventListener('click', () => {
+                window.saveDiaryEntry();
+                fabContainer.classList.remove('open'); // Close menu after action
+            });
+
+            fabCopyButton.addEventListener('click', () => {
+                const outputArea = document.getElementById('diary-output');
+                outputArea.select();
+                outputArea.setSelectionRange(0, 99999);
+                try {
+                    document.execCommand('copy');
+                    setStatus('Output copied to clipboard!', 'success');
+                } catch (err) {
+                    setStatus('Failed to copy output.', 'error');
+                }
+                fabContainer.classList.remove('open'); // Close menu after action
+            });
             updateDateInfo(); // Call the local setup function
             initializeFirebase();
         });
