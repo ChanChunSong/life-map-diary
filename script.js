@@ -288,6 +288,38 @@ function createWorkItemElement(task = { title: '', detail: '' }) {
     container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
     container.ondblclick = () => toggleTaskDetail(container);
 
+    // --- Swipe Gesture Logic ---
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    container.addEventListener('touchstart', (event) => {
+        touchStartX = event.changedTouches[0].screenX;
+        touchStartY = event.changedTouches[0].screenY;
+        console.log('touchstart triggered:', { touchStartX, touchStartY });
+    }, { passive: true });
+
+    container.addEventListener('touchend', (event) => {
+        touchEndX = event.changedTouches[0].screenX;
+        touchEndY = event.changedTouches[0].screenY;
+        console.log('touchend triggered:', { touchEndX, touchEndY });
+        handleSwipeGesture();
+    }, { passive: true });
+
+    function handleSwipeGesture() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        console.log('handleSwipeGesture triggered:', { deltaX, deltaY });
+
+        // Trigger swipe if horizontal movement is significant and vertical movement is minimal
+        if (Math.abs(deltaX) > 50 && Math.abs(deltaY) < 50) {
+            console.log('Swipe detected! Toggling task detail.');
+            toggleTaskDetail(container);
+        }
+    }
+    // --- End Swipe Gesture Logic ---
+
     // Use innerHTML for complex structure, ensuring proper quoting for attributes
     container.innerHTML = `
         <div class="flex items-start space-x-3 mb-2">
