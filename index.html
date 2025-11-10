@@ -72,6 +72,23 @@
         
     </section>
 
+    <!-- Floating Navigation Menu -->
+    <nav id="floating-nav" class="hidden lg:block fixed left-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200">
+        <ul class="space-y-2">
+            <li><a href="#history-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">History</a></li>
+            <li><a href="#reflection-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Reflection</a></li>
+            <li><a href="#lifemap-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Life Map</a></li>
+            <li><a href="#worklog-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Work Log</a></li>
+            <li><a href="#weekgoals-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Week Goals</a></li>
+            <li><a href="#gamification-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Gamification</a></li>
+            <li><a href="#longterm-plan-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Long Term</a></li>
+            <li><a href="#shortterm-plan-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Short Term</a></li>
+            <li><a href="#english-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">English</a></li>
+            <li><a href="#japanese-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Japanese</a></li>
+            <li><a href="#custom-notes-section" class="nav-link text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Custom</a></li>
+        </ul>
+    </nav>
+
     <!-- MAIN CONTENT WRAPPER -->
     <div class="w-full max-w-3xl md:max-w-6xl mx-auto">
         
@@ -79,14 +96,14 @@
         <main class="w-full p-6 bg-white shadow-xl rounded-xl mb-8">
             
             <!-- Section 1: Story, Emotion, Gratitude, Reflection -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="reflection-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">✨ Story, Emotion, Gratitude, Reflection</h2>
                 <textarea id="reflection-entry" rows="16" placeholder="How was your day? What did you feel? What are you grateful for?"
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
             <!-- Section 2: Life Map (Daily Architecture) -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="lifemap-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-2">🗺️ Life Map (Daily Architecture)</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Log daily adherence and notes based on your routine.</p>
                 <textarea id="life-map-log" rows="30" 
@@ -116,7 +133,7 @@ Time    Activity    Detail
             </section>
 
             <!-- Section 3: Work Log - NOW DYNAMIC LIST -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="worklog-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">
                     💼 Work Log (Dynamic Tasks)
                     <button id="toggle-all-details-button" class="text-sm text-blue-500 hover:text-blue-700 transition duration-150 ease-in-out ml-4">Collapse/Expand All</button>
@@ -147,7 +164,7 @@ Time    Activity    Detail
             </section>
             
             <!-- Section 4: WEEK GOALS -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="weekgoals-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 id="week-goals-header" class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🎯 Week Goals</h2>
                 <p class="text-sm italic text-gray-500 mb-4">W44 goals and important plans.</p>
                 <textarea id="week-goals-entry" rows="16" placeholder="Update on week goals and important plans..."
@@ -155,7 +172,7 @@ Time    Activity    Detail
             </section>
 
             <!-- SECTION 5: GAMIFICATION NOTES -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="gamification-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">💡 Gamification Notes</h2>
                 <p class="text-sm italic text-gray-500 mb-4">Core Drives, Octalysis ideas, or other motivational strategies.</p>
                 <textarea id="gamification-notes-entry" rows="10" placeholder="Enter your gamification analysis or notes here..."
@@ -163,35 +180,35 @@ Time    Activity    Detail
             </section>
 
             <!-- Section 6: PERSONAL LONG TERM PLAN -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="longterm-plan-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">⏳ Personal Long Term Plan</h2>
                 <textarea id="long-term-plan-entry" rows="10" placeholder="e.g., Performance App, Robot App, English movies, Japanese..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
             <!-- Section 7: PERSONAL SHORT TERM PLAN -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="shortterm-plan-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🚀 Personal Short Term Plan</h2>
                 <textarea id="short-term-plan-entry" rows="6" placeholder="e.g., Set gamification for Cecilia..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
             
             <!-- Section 8: ENGLISH PRACTICE -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="english-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇬🇧 English Practice</h2>
                 <textarea id="english-practice-entry" rows="6" placeholder="Log today's English learning activity and notes..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
             <!-- Section 9: JAPANESE PRACTICE -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="japanese-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">🇯🇵 Japanese Practice</h2>
                 <textarea id="japanese-practice-entry" rows="6" placeholder="Log today's Japanese learning, e.g., vocabulary, grammar, lyrics..."
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
             </section>
 
             <!-- Section 10: CUSTOM END NOTES (User-defined title) -->
-            <section class="p-5 rounded-xl border border-gray-100 mb-6">
+            <section id="custom-notes-section" class="p-5 rounded-xl border border-gray-100 mb-6">
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">📝 Custom Daily Notes Header</h2>
                 <!-- Input for the user-defined Markdown Title -->
                 <input type="text" id="custom-notes-title" placeholder="Enter the header title for the final entry (e.g., Final Checklist or New Ideas)"
@@ -236,5 +253,16 @@ Time    Activity    Detail
             </button>
         </div>
     </div>
+
+    <!-- Bottom Navigation Bar for Mobile -->
+    <nav id="bottom-nav" class="lg:hidden fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-sm shadow-t-lg border-t border-gray-200">
+        <ul class="flex justify-around overflow-x-auto">
+            <li><a href="#history-section" class="nav-link-bottom p-2 flex flex-col items-center text-xs font-medium text-gray-600 hover:text-blue-600 transition-colors"><span class="text-xl">🕰️</span><span class="nav-text">History</span></a></li>
+            <li><a href="#reflection-section" class="nav-link-bottom p-2 flex flex-col items-center text-xs font-medium text-gray-600 hover:text-blue-600 transition-colors"><span class="text-xl">✨</span><span class="nav-text">Reflection</span></a></li>
+            <li><a href="#lifemap-section" class="nav-link-bottom p-2 flex flex-col items-center text-xs font-medium text-gray-600 hover:text-blue-600 transition-colors"><span class="text-xl">🗺️</span><span class="nav-text">Life Map</span></a></li>
+            <li><a href="#worklog-section" class="nav-link-bottom p-2 flex flex-col items-center text-xs font-medium text-gray-600 hover:text-blue-600 transition-colors"><span class="text-xl">💼</span><span class="nav-text">Work Log</span></a></li>
+            <li><a href="#weekgoals-section" class="nav-link-bottom p-2 flex flex-col items-center text-xs font-medium text-gray-600 hover:text-blue-600 transition-colors"><span class="text-xl">🎯</span><span class="nav-text">Goals</span></a></li>
+        </ul>
+    </nav>
 </body>
 </html>

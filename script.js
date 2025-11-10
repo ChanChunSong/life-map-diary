@@ -792,6 +792,59 @@ function generateDiaryOutput(data) {
                 }
                 fabContainer.classList.remove('open'); // Close menu after action
             });
+
+            // Floating Navigation Menu Logic
+            const nav = document.getElementById('floating-nav');
+            const navLinks = nav.querySelectorAll('.nav-link');
+            const bottomNav = document.getElementById('bottom-nav');
+            const bottomNavLinks = bottomNav.querySelectorAll('.nav-link-bottom');
+            const sections = document.querySelectorAll('section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.id;
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === id);
+                        });
+                        bottomNavLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === id);
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            // --- New logic for dynamically showing/hiding the floating nav ---
+            const mainContentWrapper = document.querySelector('.w-full.max-w-3xl.md\\:max-w-6xl.mx-auto');
+            const floatingNav = document.getElementById('floating-nav');
+
+            function toggleFloatingNav() {
+                if (!mainContentWrapper || !floatingNav) return;
+
+                // The space on the left is the element's offset from the left edge of the viewport
+                const leftSpace = mainContentWrapper.offsetLeft;
+                // The width of the nav menu itself
+                const navWidth = floatingNav.offsetWidth;
+
+                // Show the nav only if the space on the left is greater than the nav's width plus a 20px buffer
+                if (leftSpace > navWidth + 20) {
+                    floatingNav.classList.remove('hidden');
+                } else {
+                    floatingNav.classList.add('hidden');
+                }
+            }
+
+            // Check on window resize
+            window.addEventListener('resize', toggleFloatingNav);
+            // Initial check on load
+            toggleFloatingNav();
+            // --- End of new logic ---
+
+
             updateDateInfo(); // Call the local setup function
             initializeFirebase();
         });

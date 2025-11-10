@@ -79,3 +79,30 @@
 .fab-container.open .fab-item:nth-child(1) { transition-delay: 0.1s; }
 .fab-container.open .fab-item:nth-child(2) { transition-delay: 0.2s; }
 
+/* Floating Navigation Menu Styles */
+#floating-nav {
+    transition: opacity 0.3s ease;
+}
+
+.nav-link.active {
+    font-weight: bold;
+    color: #1d4ed8; /* blue-700 */
+    transform: scale(1.1);
+}
+
+/* Bottom Navigation Bar Styles */
+.nav-link-bottom.active .nav-text {
+    font-weight: bold;
+    color: #1d4ed8; /* blue-700 */
+}
+
+.nav-link-bottom.active span:first-child {
+    transform: scale(1.2);
+}
+
+/* Adjust FAB position on smaller screens to avoid overlap with bottom nav */
+@media (max-width: 1023px) {
+    .fab-container {
+        bottom: 80px; /* Increased bottom margin */
+    }
+}
