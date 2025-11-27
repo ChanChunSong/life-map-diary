@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+    // apiKey: "YOUR_API_KEY_HERE", // Removed for security reasons
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
@@ -33,6 +33,7 @@ const saveButton = document.getElementById('save-button');
 const historyDropdownEl = document.getElementById('history-dropdown');
 const historyStatusEl = document.getElementById('history-status');
 const workItemsContainer = document.getElementById('work-items-container');
+const completedWorkItemsContainer = document.getElementById('completed-work-items-container');
 
 // Check if running in the secure Canvas environment
 const isRunningInCanvas = typeof __firebase_config !== 'undefined';
@@ -283,9 +284,9 @@ window.loadPastEntries = function() {
 /**
  * Creates a single HTML element for a dynamic work item.
  */
-function createWorkItemElement(task = { title: '', detail: '' }) {
+function createWorkItemElement(task = { title: '', detail: '', isCompleted: false }) {
     const container = document.createElement('div');
-    container.className = 'work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm';
+    container.className = `work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm ${task.isCompleted ? 'completed' : ''}`;
     container.ondblclick = () => toggleTaskDetail(container);
 
     // --- Swipe Gesture Logic ---
@@ -325,13 +326,15 @@ function createWorkItemElement(task = { title: '', detail: '' }) {
         <div class="flex items-start space-x-3 mb-2">
                         <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
                                class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                        <button onclick="toggleCompleted(this); event.stopPropagation();" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Toggle Completed">✓</button>
                         <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                     </div>
-                    <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container">
+    <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container ${task.isCompleted ? 'hidden' : ''}">
                         <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
                         <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
                         <button onclick="moveWorkItemDown(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
-                        <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>        </div>
+                        <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
+                    </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
@@ -379,6 +382,19 @@ window.moveWorkItemDown = function(buttonEl) {
 }
 
 /**
+ * Updates the word count display for the reflection entry.
+ */
+function updateReflectionWordCount() {
+    const textarea = document.getElementById('reflection-entry');
+    const display = document.getElementById('reflection-word-count');
+    if (textarea && display) {
+        const text = textarea.value.trim();
+        const count = text ? text.split(/\s+/).length : 0;
+        display.textContent = `Words: ${count}`;
+    }
+}
+
+/**
  * Clears and populates the form with data from a loaded entry.
  */
 function loadEntryIntoForm(data) {
@@ -390,6 +406,7 @@ function loadEntryIntoForm(data) {
 
     // Update Text Areas
     document.getElementById('reflection-entry').value = data.reflection || '';
+    updateReflectionWordCount(); // Update word count
     document.getElementById('life-map-log').value = data.lifeMap || '';
     document.getElementById('week-goals-entry').value = data.weekGoals || '';
     document.getElementById('gamification-notes-entry').value = data.gamificationNotes || '';
@@ -402,17 +419,31 @@ function loadEntryIntoForm(data) {
     
     // --- Load Dynamic Work Log ---
     workItemsContainer.innerHTML = '';
+    completedWorkItemsContainer.innerHTML = ''; // Clear completed container as well
+
     if (Array.isArray(data.work) && data.work.length > 0) {
-         data.work.forEach(task => {
-            workItemsContainer.appendChild(createWorkItemElement(task));
-         });
+        data.work.forEach(task => {
+            const taskData = {
+                title: task.title || '',
+                detail: task.detail || '',
+                isCompleted: task.isCompleted || false
+            };
+            const taskElement = createWorkItemElement(taskData);
+            if (taskData.isCompleted) {
+                completedWorkItemsContainer.appendChild(taskElement);
+            } else {
+                workItemsContainer.appendChild(taskElement);
+            }
+        });
     } else if (data.work && typeof data.work === 'string' && data.work.length > 0) {
         // Backward compatibility for old single-string work log
         const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Previous Work Log (converted)', detail: data.work });
         workItemsContainer.appendChild(defaultTask);
-    } else {
-         // Load one empty item if no work items exist
-         workItemsContainer.appendChild(createWorkItemElement());
+    }
+
+    // If after loading, the active container is empty, add one blank item
+    if (workItemsContainer.children.length === 0) {
+        workItemsContainer.appendChild(createWorkItemElement());
     }
 
     // After populating, resize all textareas to fit their new content
@@ -516,7 +547,28 @@ window.toggleTaskDetail = function(container) {
         detailInput.classList.toggle('hidden');
     }
     if (controlsContainer) {
-        controlsContainer.classList.toggle('hidden');
+        // Only toggle controls if the item is NOT completed
+        if (!container.closest('#completed-work-items-container')) {
+            controlsContainer.classList.toggle('hidden');
+        }
+    }
+}
+
+window.toggleCompleted = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    const controls = container.querySelector('.task-controls-container');
+
+    // Check which container the item is currently in
+    const isCompleted = container.parentElement === completedWorkItemsContainer;
+
+    if (isCompleted) {
+        // Move from completed back to active
+        workItemsContainer.appendChild(container);
+        controls.classList.remove('hidden'); // Show controls
+    } else {
+        // Move from active to completed
+        completedWorkItemsContainer.appendChild(container);
+        controls.classList.add('hidden'); // Hide controls
     }
 }
 
@@ -527,23 +579,31 @@ window.removeWorkItem = function(buttonEl) {
 
 function collectWorkItems() {
     const items = [];
-    const workItemElements = workItemsContainer.querySelectorAll('.work-item-container');
     
-    workItemElements.forEach(container => {
+    // Collect active items
+    workItemsContainer.querySelectorAll('.work-item-container').forEach(container => {
         const titleInput = container.querySelector('.task-title-input');
         const detailInput = container.querySelector('.task-detail-input');
-
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
 
-        // Only save items that have either a title or details
-        if (title.length > 0 || detail.length > 0) {
-            items.push({
-                title: title,
-                detail: detail
-            });
+        if (title || detail) {
+            items.push({ title, detail, isCompleted: false });
         }
     });
+
+    // Collect completed items
+    completedWorkItemsContainer.querySelectorAll('.work-item-container').forEach(container => {
+        const titleInput = container.querySelector('.task-title-input');
+        const detailInput = container.querySelector('.task-detail-input');
+        const title = titleInput ? titleInput.value.trim() : '';
+        const detail = detailInput ? detailInput.value.trim() : '';
+
+        if (title || detail) {
+            items.push({ title, detail, isCompleted: true });
+        }
+    });
+
     return items;
 }
 // --- END DYNAMIC WORK LOG FUNCTIONS ---
@@ -844,6 +904,14 @@ function generateDiaryOutput(data) {
             toggleFloatingNav();
             // --- End of new logic ---
 
+
+            // Reflection Word Count Listener
+            const reflectionEntry = document.getElementById('reflection-entry');
+            if (reflectionEntry) {
+                reflectionEntry.addEventListener('input', updateReflectionWordCount);
+                // Initialize count on load
+                updateReflectionWordCount();
+            }
 
             updateDateInfo(); // Call the local setup function
             initializeFirebase();

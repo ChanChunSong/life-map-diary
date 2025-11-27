@@ -100,6 +100,7 @@
                 <h2 class="text-xl text-blue-700 font-semibold border-b border-blue-100 pb-2 mb-4">✨ Story, Emotion, Gratitude, Reflection</h2>
                 <textarea id="reflection-entry" rows="16" placeholder="How was your day? What did you feel? What are you grateful for?"
                           class="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"></textarea>
+                <div id="reflection-word-count" class="text-sm text-gray-500 mt-2 text-right">Words: 0</div>
             </section>
 
             <!-- Section 2: Life Map (Daily Architecture) -->
@@ -151,6 +152,7 @@ Time    Activity    Detail
                             <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
                             <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
                             <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
+                            <button onclick="toggleCompleted(this)" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Toggle Completed">✓</button>
                             <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
                         </div>
                         <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
@@ -161,6 +163,14 @@ Time    Activity    Detail
                 <button onclick="addWorkItem()" class="w-full py-2 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">
                     + Add Work Item
                 </button>
+
+                <!-- Container for COMPLETED tasks -->
+                <div id="completed-tasks-section" class="mt-6">
+                    <h3 class="text-lg text-gray-600 font-semibold border-b border-gray-200 pb-2 mb-4">✅ Completed Tasks</h3>
+                    <div id="completed-work-items-container" class="space-y-3 opacity-75">
+                        <!-- Completed items will be moved here -->
+                    </div>
+                </div>
             </section>
             
             <!-- Section 4: WEEK GOALS -->
