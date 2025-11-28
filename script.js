@@ -285,7 +285,7 @@ window.loadPastEntries = function() {
 /**
  * Creates a single HTML element for a dynamic work item.
  */
-function createWorkItemElement(task = { title: '', detail: '', isCompleted: false }) {
+function createWorkItemElement(task = { title: '', detail: '', isCompleted: false, createdAt: null, modifiedAt: null }) {
     const container = document.createElement('div');
     
     // Determine classes based on completion status
@@ -293,6 +293,20 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
     let headerClasses = "flex items-start space-x-3";
     let inputClasses = "task-title-input w-full rounded-md focus:ring-blue-500 focus:border-blue-500 font-medium";
     
+    // Default to current time if no dates provided (new task)
+    const createdAt = task.createdAt || new Date().toISOString();
+    const modifiedAt = task.modifiedAt || new Date().toISOString();
+
+    // Calculate display strings
+    const createdDateStr = formatDate(createdAt);
+    const daysSinceCreated = calculateDaysPassed(createdAt);
+    const modifiedDateStr = formatDate(modifiedAt);
+    const daysSinceModified = calculateDaysPassed(modifiedAt);
+
+    // Store raw timestamps in data attributes for easy retrieval
+    container.dataset.createdAt = createdAt;
+    container.dataset.modifiedAt = modifiedAt;
+
     if (task.isCompleted) {
         // Concise View for Completed Items
         containerClasses += " completed py-2 px-3 bg-gray-50 border-b border-gray-100";
@@ -345,18 +359,23 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
     container.innerHTML = `
         <div class="${headerClasses}">
             <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
-                   class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''}>
+                   class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''} onchange="updateModifiedDate(this)">
             <button onclick="toggleCompleted(this); event.stopPropagation();" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="${task.isCompleted ? 'Restore Task' : 'Complete Task'}">${task.isCompleted ? '↺' : '✓'}</button>
             <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
         </div>
         <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden">
+            <div class="flex items-center space-x-4 text-xs text-gray-500 mr-auto ml-1 font-mono">
+                <span class="text-blue-600" title="Created: ${createdDateStr}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
+                <span class="text-gray-400">•</span>
+                <span class="text-green-600" title="Modified: ${modifiedDateStr}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
+            </div>
             <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
             <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
             <button onclick="moveWorkItemDown(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
             <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
         </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
-                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500 hidden">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500 hidden" onchange="updateModifiedDate(this)">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
     return container;
 }
@@ -446,7 +465,9 @@ function loadEntryIntoForm(data) {
             const taskData = {
                 title: task.title || '',
                 detail: task.detail || '',
-                isCompleted: task.isCompleted || false
+                isCompleted: task.isCompleted || false,
+                createdAt: task.createdAt || null,
+                modifiedAt: task.modifiedAt || null
             };
             const taskElement = createWorkItemElement(taskData);
             if (taskData.isCompleted) {
@@ -457,7 +478,7 @@ function loadEntryIntoForm(data) {
         });
     } else if (data.work && typeof data.work === 'string' && data.work.length > 0) {
         // Backward compatibility for old single-string work log
-        const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Previous Work Log (converted)', detail: data.work });
+        const defaultTask = createWorkItemElement({ isCompleted: false, title: 'Previous Work Log (converted)', detail: data.work, createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString() });
         workItemsContainer.appendChild(defaultTask);
     }
 
@@ -560,6 +581,24 @@ window.addWorkItem = function() {
     workItemsContainer.appendChild(createWorkItemElement());
 }
 
+window.updateModifiedDate = function(inputEl) {
+    const container = inputEl.closest('.work-item-container');
+    if (!container) return;
+
+    const now = new Date().toISOString();
+    // Update the data attribute
+    container.dataset.modifiedAt = now;
+
+    // We also need to update the visible metadata text if it's currently showing
+    const metadataSpan = container.querySelector('.task-controls-container .text-green-600');
+    if (metadataSpan) {
+        const modifiedDateStr = formatDate(now);
+        const daysSinceModified = calculateDaysPassed(now);
+        metadataSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
+        metadataSpan.title = `Modified: ${modifiedDateStr}`;
+    }
+}
+
 window.toggleTaskDetail = function(container) {
     const detailInput = container.querySelector('.task-detail-input');
     const controlsContainer = container.querySelector('.task-controls-container');
@@ -586,6 +625,8 @@ window.toggleCompleted = function(buttonEl) {
     const detailInput = container.querySelector('.task-detail-input');
     const currentTitle = titleInput ? titleInput.value : '';
     const currentDetail = detailInput ? detailInput.value : '';
+    const currentCreatedAt = container.dataset.createdAt;
+    const currentModifiedAt = container.dataset.modifiedAt;
     
     // 2. Determine new state
     const isCurrentlyCompleted = container.classList.contains('completed');
@@ -595,7 +636,9 @@ window.toggleCompleted = function(buttonEl) {
     const newTaskElement = createWorkItemElement({
         title: currentTitle,
         detail: currentDetail,
-        isCompleted: newState
+        isCompleted: newState,
+        createdAt: currentCreatedAt,
+        modifiedAt: currentModifiedAt
     });
 
     // 4. Place in appropriate container
@@ -626,9 +669,11 @@ function collectWorkItems() {
         const detailInput = container.querySelector('.task-detail-input');
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
+        const createdAt = container.dataset.createdAt || new Date().toISOString();
+        const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
 
         if (title || detail) {
-            items.push({ title, detail, isCompleted: false });
+            items.push({ title, detail, isCompleted: false, createdAt, modifiedAt });
         }
     });
 
@@ -638,9 +683,11 @@ function collectWorkItems() {
         const detailInput = container.querySelector('.task-detail-input');
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
+        const createdAt = container.dataset.createdAt || new Date().toISOString();
+        const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
 
         if (title || detail) {
-            items.push({ title, detail, isCompleted: true });
+            items.push({ title, detail, isCompleted: true, createdAt, modifiedAt });
         }
     });
 
@@ -813,6 +860,38 @@ function updateCompletedTaskCountDisplay() {
         // Optionally, open the details if there are items, or leave it closed.
         // For now, we will leave it closed by default as per 'collapsible' request.
     }
+}
+
+/**
+ * Calculates the number of days passed between a given date and today.
+ * @param {string} dateString - The date string (ISO format preferred).
+ * @returns {number} The number of days passed.
+ */
+function calculateDaysPassed(dateString) {
+    if (!dateString) return 0;
+    const pastDate = new Date(dateString);
+    const today = new Date();
+    // Reset time components to ensure purely date-based calculation
+    pastDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = Math.abs(today - pastDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+}
+
+/**
+ * Formats a date string to YYYY/MM/DD.
+ * @param {string} dateString - The date string to format.
+ * @returns {string} The formatted date string.
+ */
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
 }
         
         // Initialize on load is now correctly placed inside the module
