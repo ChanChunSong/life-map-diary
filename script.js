@@ -359,15 +359,15 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
     container.innerHTML = `
         <div class="${headerClasses}">
             <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
-                   class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''} onchange="updateModifiedDate(this)">
+                   class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''} oninput="updateModifiedDate(this)">
             <button onclick="toggleCompleted(this); event.stopPropagation();" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="${task.isCompleted ? 'Restore Task' : 'Complete Task'}">${task.isCompleted ? '↺' : '✓'}</button>
             <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
         </div>
         <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden">
             <div class="flex items-center space-x-4 text-xs text-gray-500 mr-auto ml-1 font-mono">
-                <span class="text-blue-600 metadata-created" title="Created: ${createdDateStr}" data-created-at="${createdAt}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
+                <span class="text-blue-600 metadata-created" title="Created: ${formatDateTime(createdAt)}" data-created-at="${createdAt}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
                 <span class="text-gray-400">•</span>
-                <span class="text-green-600 metadata-modified" title="Modified: ${modifiedDateStr}" data-modified-at="${modifiedAt}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
+                <span class="text-green-600 metadata-modified" title="Modified: ${formatDateTime(modifiedAt)}" data-modified-at="${modifiedAt}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
             </div>
             <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
             <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
@@ -375,7 +375,7 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
             <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
         </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
-                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500 hidden" onchange="updateModifiedDate(this)">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500 hidden" oninput="updateModifiedDate(this)">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
     return container;
 }
@@ -595,7 +595,7 @@ window.updateModifiedDate = function(inputEl) {
         const modifiedDateStr = formatDate(now);
         const daysSinceModified = calculateDaysPassed(now);
         metadataSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
-        metadataSpan.title = `Modified: ${modifiedDateStr}`;
+        metadataSpan.title = `Modified: ${formatDateTime(now)}`;
         metadataSpan.dataset.modifiedAt = now; // Keep data attribute in sync
     }
 }
@@ -621,6 +621,7 @@ window.toggleTaskDetail = function(container) {
                     const createdDateStr = formatDate(createdAt);
                     const daysSinceCreated = calculateDaysPassed(createdAt);
                     createdSpan.textContent = `C: ${createdDateStr} (PC: ${daysSinceCreated}D)`;
+                    createdSpan.title = `Created: ${formatDateTime(createdAt)}`;
                 }
             }
             
@@ -630,6 +631,7 @@ window.toggleTaskDetail = function(container) {
                     const modifiedDateStr = formatDate(modifiedAt);
                     const daysSinceModified = calculateDaysPassed(modifiedAt);
                     modifiedSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
+                    modifiedSpan.title = `Modified: ${formatDateTime(modifiedAt)}`;
                 }
             }
             // ------------------------------------------
@@ -887,35 +889,72 @@ function updateCompletedTaskCountDisplay() {
 }
 
 /**
- * Calculates the number of days passed between a given date and today.
- * @param {string} dateString - The date string (ISO format preferred).
+ * Returns the current time as a Date object adjusted to Taipei Standard Time (UTC+8).
+ * Note: This returns a Date object where the "local" time getters correspond to Taipei time.
+ */
+function getCurrentTaipeiTime() {
+    const now = new Date();
+    // UTC time in ms
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    // Taipei is UTC + 8 hours
+    const taipeiOffset = 8 * 60 * 60 * 1000;
+    return new Date(utc + taipeiOffset);
+}
+
+/**
+ * Calculates the number of days passed between a given date and today (Taipei Time).
+ * @param {string} dateString - The date string (ISO format).
  * @returns {number} The number of days passed.
  */
 function calculateDaysPassed(dateString) {
     if (!dateString) return 0;
-    const pastDate = new Date(dateString);
-    const today = new Date();
-    // Reset time components to ensure purely date-based calculation
-    pastDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
     
-    const diffTime = Math.abs(today - pastDate);
+    // Parse the stored date (which is ISO UTC)
+    const storedDate = new Date(dateString);
+    // Convert stored date to Taipei time for "calendar day" comparison
+    const utcStored = storedDate.getTime() + (storedDate.getTimezoneOffset() * 60000);
+    const taipeiStored = new Date(utcStored + (8 * 60 * 60 * 1000));
+
+    // Get current Taipei time
+    const taipeiToday = getCurrentTaipeiTime();
+
+    // Reset time components to ensure purely date-based calculation
+    taipeiStored.setHours(0, 0, 0, 0);
+    taipeiToday.setHours(0, 0, 0, 0);
+    
+    const diffTime = Math.abs(taipeiToday - taipeiStored);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
     return diffDays;
 }
 
 /**
- * Formats a date string to YYYY/MM/DD.
+ * Formats a date string to YYYY/MM/DD in Taipei Time.
  * @param {string} dateString - The date string to format.
  * @returns {string} The formatted date string.
  */
 function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    
+    // Convert to Taipei Time for display
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const taipeiDate = new Date(utc + (8 * 60 * 60 * 1000));
+
+    const year = taipeiDate.getFullYear();
+    const month = String(taipeiDate.getMonth() + 1).padStart(2, '0');
+    const day = String(taipeiDate.getDate()).padStart(2, '0');
     return `${year}/${month}/${day}`;
+}
+
+/**
+ * Formats a date string to a full locale string in Taipei Time.
+ * @param {string} dateString - The date string to format.
+ * @returns {string} The formatted date string.
+ */
+function formatDateTime(dateString) {
+    if (!dateString) return '';
+    // Simply force the timezone to Taipei
+    return new Date(dateString).toLocaleString('en-US', { timeZone: 'Asia/Taipei' });
 }
         
         // Initialize on load is now correctly placed inside the module
