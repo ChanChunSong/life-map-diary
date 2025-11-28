@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+    // apiKey: "YOUR_API_KEY_HERE", // Removed for security reasons
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
@@ -365,9 +365,9 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
         </div>
         <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden">
             <div class="flex items-center space-x-4 text-xs text-gray-500 mr-auto ml-1 font-mono">
-                <span class="text-blue-600" title="Created: ${createdDateStr}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
+                <span class="text-blue-600 metadata-created" title="Created: ${createdDateStr}" data-created-at="${createdAt}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
                 <span class="text-gray-400">•</span>
-                <span class="text-green-600" title="Modified: ${modifiedDateStr}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
+                <span class="text-green-600 metadata-modified" title="Modified: ${modifiedDateStr}" data-modified-at="${modifiedAt}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
             </div>
             <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
             <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
@@ -590,12 +590,13 @@ window.updateModifiedDate = function(inputEl) {
     container.dataset.modifiedAt = now;
 
     // We also need to update the visible metadata text if it's currently showing
-    const metadataSpan = container.querySelector('.task-controls-container .text-green-600');
+    const metadataSpan = container.querySelector('.metadata-modified');
     if (metadataSpan) {
         const modifiedDateStr = formatDate(now);
         const daysSinceModified = calculateDaysPassed(now);
         metadataSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
         metadataSpan.title = `Modified: ${modifiedDateStr}`;
+        metadataSpan.dataset.modifiedAt = now; // Keep data attribute in sync
     }
 }
 
@@ -609,6 +610,29 @@ window.toggleTaskDetail = function(container) {
         detailInput.classList.toggle('hidden');
         if (!detailInput.classList.contains('hidden')) {
             autoResizeTextarea(detailInput);
+            
+            // --- Refresh Metadata Display on Expand ---
+            const createdSpan = container.querySelector('.metadata-created');
+            const modifiedSpan = container.querySelector('.metadata-modified');
+            
+            if (createdSpan) {
+                const createdAt = createdSpan.dataset.createdAt || container.dataset.createdAt;
+                if (createdAt) {
+                    const createdDateStr = formatDate(createdAt);
+                    const daysSinceCreated = calculateDaysPassed(createdAt);
+                    createdSpan.textContent = `C: ${createdDateStr} (PC: ${daysSinceCreated}D)`;
+                }
+            }
+            
+            if (modifiedSpan) {
+                const modifiedAt = modifiedSpan.dataset.modifiedAt || container.dataset.modifiedAt;
+                if (modifiedAt) {
+                    const modifiedDateStr = formatDate(modifiedAt);
+                    const daysSinceModified = calculateDaysPassed(modifiedAt);
+                    modifiedSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
+                }
+            }
+            // ------------------------------------------
         }
     }
     
