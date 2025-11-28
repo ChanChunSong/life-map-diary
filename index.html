@@ -142,22 +142,6 @@ Time    Activity    Detail
                 
                 <!-- Container for dynamic task rows -->
                 <div id="work-items-container" class="space-y-4 mb-4">
-                    <!-- Default/Sample Item -->
-                    <div class="work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-                        <div class="flex items-start space-x-3 mb-2">
-                            <input type="checkbox" class="task-status-checkbox mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                            <input type="text" placeholder="Task Title (e.g., UFS error log capture)" 
-                                   class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
-                            <button onclick="moveWorkItemToTop(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
-                            <button onclick="moveWorkItemUp(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
-                            <button onclick="moveWorkItemDown(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
-                            <button onclick="moveWorkItemToBottom(this)" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
-                            <button onclick="toggleCompleted(this)" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Toggle Completed">✓</button>
-                            <button onclick="removeWorkItem(this)" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
-                        </div>
-                        <textarea rows="3" placeholder="Details (e.g., Fixed format to print error log. Implemented bootloader checking function.)" 
-                                  class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500"></textarea>
-                    </div>
                 </div>
 
                 <button onclick="addWorkItem()" class="w-full py-2 px-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">
