@@ -560,6 +560,7 @@ window.toggleTaskDetail = function(container) {
 window.toggleCompleted = function(buttonEl) {
     const container = buttonEl.closest('.work-item-container');
     const controls = container.querySelector('.task-controls-container');
+    const detailInput = container.querySelector('.task-detail-input');
 
     // Check which container the item is currently in
     const isCompleted = container.parentElement === completedWorkItemsContainer;
@@ -568,10 +569,15 @@ window.toggleCompleted = function(buttonEl) {
         // Move from completed back to active
         workItemsContainer.appendChild(container);
         controls.classList.remove('hidden'); // Show controls
+        container.classList.remove('completed');
     } else {
         // Move from active to completed
         completedWorkItemsContainer.appendChild(container);
         controls.classList.add('hidden'); // Hide controls
+        container.classList.add('completed');
+        if (detailInput) {
+            detailInput.classList.add('hidden'); // Force hide details when completing
+        }
     }
 }
 
