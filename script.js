@@ -286,7 +286,25 @@ window.loadPastEntries = function() {
  */
 function createWorkItemElement(task = { title: '', detail: '', isCompleted: false }) {
     const container = document.createElement('div');
-    container.className = `work-item-container bg-white border border-gray-200 rounded-lg p-3 shadow-sm ${task.isCompleted ? 'completed' : ''}`;
+    
+    // Determine classes based on completion status
+    let containerClasses = "work-item-container rounded-lg transition-all duration-200";
+    let headerClasses = "flex items-start space-x-3";
+    let inputClasses = "task-title-input w-full rounded-md focus:ring-blue-500 focus:border-blue-500 font-medium";
+    
+    if (task.isCompleted) {
+        // Concise View for Completed Items
+        containerClasses += " completed py-2 px-3 bg-gray-50 border-b border-gray-100";
+        headerClasses += " mb-0"; // No margin bottom
+        inputClasses += " bg-transparent border-none p-0 text-sm text-gray-500 line-through focus:ring-0";
+    } else {
+        // Standard View for Active Items
+        containerClasses += " bg-white border border-gray-200 p-3 shadow-sm";
+        headerClasses += " mb-2";
+        inputClasses += " p-2 border border-gray-300 text-base";
+    }
+    
+    container.className = containerClasses;
     container.ondblclick = () => toggleTaskDetail(container);
 
     // --- Swipe Gesture Logic ---
@@ -322,19 +340,20 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
     // --- End Swipe Gesture Logic ---
 
     // Use innerHTML for complex structure, ensuring proper quoting for attributes
+    // Note: Detail textarea is hidden by default if completed or initialized as such
     container.innerHTML = `
-        <div class="flex items-start space-x-3 mb-2">
-                        <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
-                               class="task-title-input w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
-                        <button onclick="toggleCompleted(this); event.stopPropagation();" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Toggle Completed">✓</button>
-                        <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
-                    </div>
-    <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden ${task.isCompleted ? 'hidden' : ''}">
-                        <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
-                        <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
-                        <button onclick="moveWorkItemDown(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
-                        <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
-                    </div>
+        <div class="${headerClasses}">
+            <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
+                   class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''}>
+            <button onclick="toggleCompleted(this); event.stopPropagation();" class="text-green-500 hover:text-green-700 transition duration-150 text-xl font-bold p-1 leading-none" title="${task.isCompleted ? 'Restore Task' : 'Complete Task'}">${task.isCompleted ? '↺' : '✓'}</button>
+            <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
+        </div>
+        <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden">
+            <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
+            <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
+            <button onclick="moveWorkItemDown(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Down">▼</button>
+            <button onclick="moveWorkItemToBottom(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Bottom">⏬</button>
+        </div>
         <textarea rows="3" placeholder="Details (steps, progress, next actions...)"
                   class="task-detail-input w-full p-2 border border-gray-300 rounded-md text-sm resize-y focus:ring-blue-500 focus:border-blue-500 hidden">${task.detail.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
     `;
@@ -543,42 +562,50 @@ window.addWorkItem = function() {
 window.toggleTaskDetail = function(container) {
     const detailInput = container.querySelector('.task-detail-input');
     const controlsContainer = container.querySelector('.task-controls-container');
+    // Only toggle controls if the item is NOT completed
+    const isCompleted = container.classList.contains('completed');
+
     if (detailInput) {
         detailInput.classList.toggle('hidden');
         if (!detailInput.classList.contains('hidden')) {
             autoResizeTextarea(detailInput);
         }
     }
-    if (controlsContainer) {
-        // Only toggle controls if the item is NOT completed
-        if (!container.closest('#completed-work-items-container')) {
-            controlsContainer.classList.toggle('hidden');
-        }
+    
+    if (controlsContainer && !isCompleted) {
+         controlsContainer.classList.toggle('hidden');
     }
 }
 
 window.toggleCompleted = function(buttonEl) {
     const container = buttonEl.closest('.work-item-container');
-    const controls = container.querySelector('.task-controls-container');
+    
+    // 1. Extract current data
+    const titleInput = container.querySelector('.task-title-input');
     const detailInput = container.querySelector('.task-detail-input');
+    const currentTitle = titleInput ? titleInput.value : '';
+    const currentDetail = detailInput ? detailInput.value : '';
+    
+    // 2. Determine new state
+    const isCurrentlyCompleted = container.classList.contains('completed');
+    const newState = !isCurrentlyCompleted;
 
-    // Check which container the item is currently in
-    const isCompleted = container.parentElement === completedWorkItemsContainer;
+    // 3. Create NEW element with toggled state
+    const newTaskElement = createWorkItemElement({
+        title: currentTitle,
+        detail: currentDetail,
+        isCompleted: newState
+    });
 
-    if (isCompleted) {
-        // Move from completed back to active
-        workItemsContainer.appendChild(container);
-        controls.classList.remove('hidden'); // Show controls
-        container.classList.remove('completed');
+    // 4. Place in appropriate container
+    if (newState) {
+        completedWorkItemsContainer.appendChild(newTaskElement);
     } else {
-        // Move from active to completed
-        completedWorkItemsContainer.appendChild(container);
-        controls.classList.add('hidden'); // Hide controls
-        container.classList.add('completed');
-        if (detailInput) {
-            detailInput.classList.add('hidden'); // Force hide details when completing
-        }
+        workItemsContainer.appendChild(newTaskElement);
     }
+
+    // 5. Remove old element
+    container.remove();
 }
 
 window.removeWorkItem = function(buttonEl) {
