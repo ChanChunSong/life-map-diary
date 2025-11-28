@@ -148,12 +148,24 @@ Time    Activity    Detail
                     + Add Work Item
                 </button>
 
-                <!-- Container for COMPLETED tasks -->
+                <!-- Container for COMPLETED tasks (Solution 2: Collapsible Accordion) -->
                 <div id="completed-tasks-section" class="mt-6">
-                    <h3 class="text-lg text-gray-600 font-semibold border-b border-gray-200 pb-2 mb-4">✅ Completed Tasks</h3>
-                    <div id="completed-work-items-container" class="space-y-3 opacity-75">
-                        <!-- Completed items will be moved here -->
-                    </div>
+                    <details class="group bg-gray-50 border border-gray-200 rounded-lg open:shadow-md transition-all duration-200">
+                        <summary class="list-none flex items-center justify-between cursor-pointer p-4 font-semibold text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-lg">
+                            <span class="flex items-center gap-2">
+                                ✅ Completed Tasks <span id="completed-tasks-summary-count" class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">0 items</span>
+                            </span>
+                            <span class="transition group-open:rotate-180">
+                                <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                            </span>
+                        </summary>
+                        
+                        <div class="border-t border-gray-200 p-2">
+                            <div id="completed-work-items-container" class="space-y-1 opacity-75">
+                                <!-- Completed items will be moved here by script.js -->
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </section>
             

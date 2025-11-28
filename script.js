@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    // apiKey: "YOUR_API_KEY_HERE", // Removed for security reasons
+    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
@@ -34,6 +34,7 @@ const historyDropdownEl = document.getElementById('history-dropdown');
 const historyStatusEl = document.getElementById('history-status');
 const workItemsContainer = document.getElementById('work-items-container');
 const completedWorkItemsContainer = document.getElementById('completed-work-items-container');
+const completedTasksSummaryCount = document.getElementById('completed-tasks-summary-count'); // New UI element
 
 // Check if running in the secure Canvas environment
 const isRunningInCanvas = typeof __firebase_config !== 'undefined';
@@ -462,12 +463,12 @@ function loadEntryIntoForm(data) {
 
     // If after loading, the active container is empty, add one blank item
     if (workItemsContainer.children.length === 0) {
-        workItemsContainer.appendChild(createWorkItemElement());
-    }
-
-    // After populating, resize all textareas to fit their new content
-    document.querySelectorAll('textarea').forEach(autoResizeTextarea);
-}
+                    workItemsContainer.appendChild(createWorkItemElement());
+                }
+        
+            // After populating, resize all textareas to fit their new content and update the completed task count
+            document.querySelectorAll('textarea').forEach(autoResizeTextarea);
+            updateCompletedTaskCountDisplay();}
 
 // --- Explicitly attach window functions ---
 
@@ -606,6 +607,9 @@ window.toggleCompleted = function(buttonEl) {
 
     // 5. Remove old element
     container.remove();
+
+    // 6. Update the completed task count display
+    updateCompletedTaskCountDisplay();
 }
 
 window.removeWorkItem = function(buttonEl) {
@@ -797,6 +801,19 @@ function generateDiaryOutput(data) {
             // Set the height to the scrollHeight to fit the content, adding a little buffer
             textarea.style.height = (textarea.scrollHeight) + 'px';
         }
+
+/**
+ * Updates the display for the number of completed tasks in the summary.
+ */
+function updateCompletedTaskCountDisplay() {
+    if (completedTasksSummaryCount && completedWorkItemsContainer) {
+        const count = completedWorkItemsContainer.children.length;
+        completedTasksSummaryCount.textContent = `${count} items`;
+
+        // Optionally, open the details if there are items, or leave it closed.
+        // For now, we will leave it closed by default as per 'collapsible' request.
+    }
+}
         
         // Initialize on load is now correctly placed inside the module
         window.addEventListener('load', () => {
