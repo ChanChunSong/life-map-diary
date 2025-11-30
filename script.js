@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    // apiKey: "YOUR_API_KEY_HERE", // Removed for security reasons
+    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
@@ -364,10 +364,13 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
             <button onclick="removeWorkItem(this); event.stopPropagation();" class="text-red-500 hover:text-red-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Remove Task">&times;</button>
         </div>
         <div class="flex items-center justify-end space-x-2 mb-2 task-controls-container hidden">
-            <div class="flex items-center space-x-4 text-xs text-gray-500 mr-auto ml-1 font-mono">
-                <span class="text-blue-600 metadata-created" title="Created: ${formatDateTime(createdAt)}" data-created-at="${createdAt}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
-                <span class="text-gray-400">•</span>
-                <span class="text-green-600 metadata-modified" title="Modified: ${formatDateTime(modifiedAt)}" data-modified-at="${modifiedAt}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
+            <div class="flex items-center justify-between text-xs text-gray-500 mr-auto ml-1 font-mono w-full sm:w-auto">
+                <div class="flex items-center space-x-4">
+                    <span class="text-blue-600 metadata-created" title="Created: ${formatDateTime(createdAt)}" data-created-at="${createdAt}">C: ${createdDateStr} (PC: ${daysSinceCreated}D)</span>
+                    <span class="text-gray-400">•</span>
+                    <span class="text-green-600 metadata-modified" title="Modified: ${formatDateTime(modifiedAt)}" data-modified-at="${modifiedAt}">M: ${modifiedDateStr} (MC: ${daysSinceModified}D)</span>
+                </div>
+                <button onclick="openDateModal(this); event.stopPropagation();" class="text-gray-400 hover:text-blue-600 transition text-lg ml-4" title="Adjust Timestamps">⚙️</button>
             </div>
             <button onclick="moveWorkItemToTop(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move to Top">⏫</button>
             <button onclick="moveWorkItemUp(this); event.stopPropagation();" class="text-gray-500 hover:text-gray-700 transition duration-150 text-xl font-bold p-1 leading-none" title="Move Up">▲</button>
@@ -599,6 +602,83 @@ window.updateModifiedDate = function(inputEl) {
         metadataSpan.dataset.modifiedAt = now; // Keep data attribute in sync
     }
 }
+
+// --- Date Modal Logic ---
+let currentEditingContainer = null;
+
+window.openDateModal = function(buttonEl) {
+    const container = buttonEl.closest('.work-item-container');
+    if (!container) return;
+    currentEditingContainer = container;
+
+    const createdAt = container.dataset.createdAt || new Date().toISOString();
+    const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
+
+    // Convert ISO string to format required by datetime-local input (YYYY-MM-DDTHH:mm)
+    // Note: This input expects local time format, but we are storing UTC. 
+    // To simplify for the user, we will display it as "local" (browser) time in the picker.
+    // When saving, we convert back to UTC ISO string.
+    
+    // Helper to format Date for input
+    const toLocalISO = (isoStr) => {
+        const d = new Date(isoStr);
+        // Adjust for timezone offset to get "local" ISO string
+        const offset = d.getTimezoneOffset() * 60000; 
+        const localDate = new Date(d.getTime() - offset);
+        return localDate.toISOString().slice(0, 16); 
+    };
+
+    document.getElementById('modal-created-at').value = toLocalISO(createdAt);
+    document.getElementById('modal-modified-at').value = toLocalISO(modifiedAt);
+
+    document.getElementById('date-modal').showModal();
+}
+
+window.closeDateModal = function() {
+    document.getElementById('date-modal').close();
+    currentEditingContainer = null;
+}
+
+window.saveDateModal = function() {
+    if (!currentEditingContainer) return;
+
+    const createdInput = document.getElementById('modal-created-at').value;
+    const modifiedInput = document.getElementById('modal-modified-at').value;
+
+    if (createdInput && modifiedInput) {
+        // Convert local input back to UTC ISO string
+        const newCreatedAt = new Date(createdInput).toISOString();
+        const newModifiedAt = new Date(modifiedInput).toISOString();
+
+        // Update data attributes
+        currentEditingContainer.dataset.createdAt = newCreatedAt;
+        currentEditingContainer.dataset.modifiedAt = newModifiedAt;
+
+        // Refresh the displayed metadata
+        // We can reuse the logic from toggleTaskDetail or just manually update here
+        const createdSpan = currentEditingContainer.querySelector('.metadata-created');
+        const modifiedSpan = currentEditingContainer.querySelector('.metadata-modified');
+
+        if (createdSpan) {
+            const createdDateStr = formatDate(newCreatedAt);
+            const daysSinceCreated = calculateDaysPassed(newCreatedAt);
+            createdSpan.textContent = `C: ${createdDateStr} (PC: ${daysSinceCreated}D)`;
+            createdSpan.title = `Created: ${formatDateTime(newCreatedAt)}`;
+            createdSpan.dataset.createdtAt = newCreatedAt;
+        }
+
+        if (modifiedSpan) {
+            const modifiedDateStr = formatDate(newModifiedAt);
+            const daysSinceModified = calculateDaysPassed(newModifiedAt);
+            modifiedSpan.textContent = `M: ${modifiedDateStr} (MC: ${daysSinceModified}D)`;
+            modifiedSpan.title = `Modified: ${formatDateTime(newModifiedAt)}`;
+            modifiedSpan.dataset.modifiedAt = newModifiedAt;
+        }
+    }
+
+    closeDateModal();
+}
+// ------------------------
 
 window.toggleTaskDetail = function(container) {
     const detailInput = container.querySelector('.task-detail-input');
