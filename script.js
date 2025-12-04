@@ -1265,20 +1265,21 @@ function formatDateTime(dateString) {
             // --- New logic for dynamically showing/hiding the floating nav ---
             const mainContentWrapper = document.querySelector('.w-full.max-w-3xl.md\\:max-w-6xl.mx-auto');
             const floatingNav = document.getElementById('floating-nav');
+            const bottomNavBar = document.getElementById('bottom-nav');
 
             function toggleFloatingNav() {
                 if (!mainContentWrapper || !floatingNav) return;
 
                 // The space on the left is the element's offset from the left edge of the viewport
                 const leftSpace = mainContentWrapper.offsetLeft;
-                // The width of the nav menu itself
-                const navWidth = floatingNav.offsetWidth;
+                const navWidth = floatingNav.offsetWidth || 200; // Use a heuristic if hidden
 
-                // Show the nav only if the space on the left is greater than the nav's width plus a 20px buffer
                 if (leftSpace > navWidth + 20) {
-                    floatingNav.classList.remove('hidden');
+                    floatingNav.style.display = 'block';
+                    if (bottomNavBar) bottomNavBar.style.display = 'none';
                 } else {
-                    floatingNav.classList.add('hidden');
+                    floatingNav.style.display = 'none';
+                    if (bottomNavBar) bottomNavBar.style.display = 'block';
                 }
             }
 
