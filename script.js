@@ -535,6 +535,40 @@ window.changeCount = function(inputId, delta) {
     input.value = newValue;
 }
 
+window.goToToday = function() {
+    const dateInput = document.getElementById('date-input');
+    const today = new Date();
+    // Format YYYY-MM-DD using local time (or specific timezone if desired, sticking to simple local here)
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${y}-${m}-${d}`;
+    window.updateWeekday();
+}
+
+window.goToNextDay = function() {
+    const dateInput = document.getElementById('date-input');
+    if (!dateInput.value) {
+        window.goToToday(); // Fallback if empty
+        return;
+    }
+    
+    const date = new Date(dateInput.value);
+    // Add 1 day
+    date.setDate(date.getDate() + 1);
+    
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    dateInput.value = `${y}-${m}-${d}`;
+    
+    window.updateWeekday();
+    
+    // Automatically increment counts
+    window.changeCount('consecutive-day-input', 1);
+    window.changeCount('accumulated-count-input', 1);
+}
+
 window.updateWeekday = function() {
     const dateInput = document.getElementById('date-input');
     const weekdayDisplay = document.getElementById('weekday-display');
