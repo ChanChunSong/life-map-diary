@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyD__dR1li4EoLw57vTRnvfnYfuoLuEdPa4",
+    apiKey: "YOUR_API_KEY_HERE",
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
@@ -357,6 +357,8 @@ function createWorkItemElement(task = { title: '', detail: '', isCompleted: fals
     // Use innerHTML for complex structure, ensuring proper quoting for attributes
     // Note: Detail textarea is hidden by default if completed or initialized as such
     container.innerHTML = `
+        <input type="hidden" class="task-created-at" value="${createdAt}">
+        <input type="hidden" class="task-modified-at" value="${modifiedAt}">
         <div class="${headerClasses}">
             <input type="text" value="${task.title.replace(/"/g, '&quot;')}" placeholder="Task Title"
                    class="${inputClasses}" ${task.isCompleted ? 'readonly' : ''} oninput="updateModifiedDate(this)">
@@ -589,8 +591,15 @@ window.updateModifiedDate = function(inputEl) {
     if (!container) return;
 
     const now = new Date().toISOString();
+    
     // Update the data attribute
     container.dataset.modifiedAt = now;
+    
+    // Update the hidden input
+    const modifiedInput = container.querySelector('.task-modified-at');
+    if (modifiedInput) {
+        modifiedInput.value = now;
+    }
 
     // We also need to update the visible metadata text if it's currently showing
     const metadataSpan = container.querySelector('.metadata-modified');
@@ -603,6 +612,17 @@ window.updateModifiedDate = function(inputEl) {
     }
 }
 
+/**
+ * Updates both Created and Modified dates to the current time.
+ * To be used when a task is essentially "reset" or "reassigned" to today.
+ */
+window.resetTaskDates = function(buttonEl) {
+    // We can add a button for this later if requested, or trigger it via specific actions.
+    // For now, based on the request "If the task time has a change like task reassign, or reschedule. I need to change the create time and modify time.",
+    // The Modal Dialog (Solution 3) already allows manual editing of BOTH dates to achieve this.
+    // The user can manually set Created Date to today in the modal.
+}
+
 // --- Date Modal Logic ---
 let currentEditingContainer = null;
 
@@ -611,25 +631,29 @@ window.openDateModal = function(buttonEl) {
     if (!container) return;
     currentEditingContainer = container;
 
-    const createdAt = container.dataset.createdAt || new Date().toISOString();
-    const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
+    // Read from hidden input first, then dataset
+    const createdInputEl = container.querySelector('.task-created-at');
+    const modifiedInputEl = container.querySelector('.task-modified-at');
+
+    const createdAt = (createdInputEl ? createdInputEl.value : null) || container.dataset.createdAt || new Date().toISOString();
+    const modifiedAt = (modifiedInputEl ? modifiedInputEl.value : null) || container.dataset.modifiedAt || new Date().toISOString();
 
     // Convert ISO string to format required by datetime-local input (YYYY-MM-DDTHH:mm)
-    // Note: This input expects local time format, but we are storing UTC. 
-    // To simplify for the user, we will display it as "local" (browser) time in the picker.
-    // When saving, we convert back to UTC ISO string.
+    // Note: This input expects local time format. We want to display Taipei Time (UTC+8).
     
-    // Helper to format Date for input
-    const toLocalISO = (isoStr) => {
+    // Helper to format Date for input (Explicitly shift to UTC+8)
+    const toTaipeiLocalISO = (isoStr) => {
         const d = new Date(isoStr);
-        // Adjust for timezone offset to get "local" ISO string
-        const offset = d.getTimezoneOffset() * 60000; 
-        const localDate = new Date(d.getTime() - offset);
-        return localDate.toISOString().slice(0, 16); 
+        // UTC time in ms
+        const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+        // Taipei is UTC + 8 hours
+        const taipeiOffset = 8 * 60 * 60 * 1000;
+        const taipeiDate = new Date(utc + taipeiOffset);
+        return taipeiDate.toISOString().slice(0, 16); 
     };
 
-    document.getElementById('modal-created-at').value = toLocalISO(createdAt);
-    document.getElementById('modal-modified-at').value = toLocalISO(modifiedAt);
+    document.getElementById('modal-created-at').value = toTaipeiLocalISO(createdAt);
+    document.getElementById('modal-modified-at').value = toTaipeiLocalISO(modifiedAt);
 
     document.getElementById('date-modal').showModal();
 }
@@ -646,13 +670,20 @@ window.saveDateModal = function() {
     const modifiedInput = document.getElementById('modal-modified-at').value;
 
     if (createdInput && modifiedInput) {
-        // Convert local input back to UTC ISO string
-        const newCreatedAt = new Date(createdInput).toISOString();
-        const newModifiedAt = new Date(modifiedInput).toISOString();
+        // Convert input (Taipei Time) back to UTC ISO string
+        // We append the timezone offset (+08:00) so Date.parse treats it correctly
+        const newCreatedAt = new Date(createdInput + ":00+08:00").toISOString();
+        const newModifiedAt = new Date(modifiedInput + ":00+08:00").toISOString();
 
         // Update data attributes
         currentEditingContainer.dataset.createdAt = newCreatedAt;
         currentEditingContainer.dataset.modifiedAt = newModifiedAt;
+        
+        // Update hidden inputs
+        const createdHidden = currentEditingContainer.querySelector('.task-created-at');
+        const modifiedHidden = currentEditingContainer.querySelector('.task-modified-at');
+        if (createdHidden) createdHidden.value = newCreatedAt;
+        if (modifiedHidden) modifiedHidden.value = newModifiedAt;
 
         // Refresh the displayed metadata
         // We can reuse the logic from toggleTaskDetail or just manually update here
@@ -664,7 +695,7 @@ window.saveDateModal = function() {
             const daysSinceCreated = calculateDaysPassed(newCreatedAt);
             createdSpan.textContent = `C: ${createdDateStr} (PC: ${daysSinceCreated}D)`;
             createdSpan.title = `Created: ${formatDateTime(newCreatedAt)}`;
-            createdSpan.dataset.createdtAt = newCreatedAt;
+            createdSpan.dataset.createdAt = newCreatedAt;
         }
 
         if (modifiedSpan) {
@@ -694,9 +725,11 @@ window.toggleTaskDetail = function(container) {
             // --- Refresh Metadata Display on Expand ---
             const createdSpan = container.querySelector('.metadata-created');
             const modifiedSpan = container.querySelector('.metadata-modified');
+            const createdHidden = container.querySelector('.task-created-at');
+            const modifiedHidden = container.querySelector('.task-modified-at');
             
             if (createdSpan) {
-                const createdAt = createdSpan.dataset.createdAt || container.dataset.createdAt;
+                const createdAt = (createdHidden ? createdHidden.value : null) || createdSpan.dataset.createdAt || container.dataset.createdAt;
                 if (createdAt) {
                     const createdDateStr = formatDate(createdAt);
                     const daysSinceCreated = calculateDaysPassed(createdAt);
@@ -706,7 +739,7 @@ window.toggleTaskDetail = function(container) {
             }
             
             if (modifiedSpan) {
-                const modifiedAt = modifiedSpan.dataset.modifiedAt || container.dataset.modifiedAt;
+                const modifiedAt = (modifiedHidden ? modifiedHidden.value : null) || modifiedSpan.dataset.modifiedAt || container.dataset.modifiedAt;
                 if (modifiedAt) {
                     const modifiedDateStr = formatDate(modifiedAt);
                     const daysSinceModified = calculateDaysPassed(modifiedAt);
@@ -729,10 +762,15 @@ window.toggleCompleted = function(buttonEl) {
     // 1. Extract current data
     const titleInput = container.querySelector('.task-title-input');
     const detailInput = container.querySelector('.task-detail-input');
+    const createdHidden = container.querySelector('.task-created-at');
+    const modifiedHidden = container.querySelector('.task-modified-at');
+
     const currentTitle = titleInput ? titleInput.value : '';
     const currentDetail = detailInput ? detailInput.value : '';
-    const currentCreatedAt = container.dataset.createdAt;
-    const currentModifiedAt = container.dataset.modifiedAt;
+    
+    // Prefer hidden input, fallback to dataset
+    const currentCreatedAt = (createdHidden ? createdHidden.value : null) || container.dataset.createdAt;
+    const currentModifiedAt = (modifiedHidden ? modifiedHidden.value : null) || container.dataset.modifiedAt;
     
     // 2. Determine new state
     const isCurrentlyCompleted = container.classList.contains('completed');
@@ -773,10 +811,15 @@ function collectWorkItems() {
     workItemsContainer.querySelectorAll('.work-item-container').forEach(container => {
         const titleInput = container.querySelector('.task-title-input');
         const detailInput = container.querySelector('.task-detail-input');
+        const createdHidden = container.querySelector('.task-created-at');
+        const modifiedHidden = container.querySelector('.task-modified-at');
+
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
-        const createdAt = container.dataset.createdAt || new Date().toISOString();
-        const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
+        
+        // Prioritize hidden input, then dataset, then default to new date
+        const createdAt = (createdHidden ? createdHidden.value : null) || container.dataset.createdAt || new Date().toISOString();
+        const modifiedAt = (modifiedHidden ? modifiedHidden.value : null) || container.dataset.modifiedAt || new Date().toISOString();
 
         if (title || detail) {
             items.push({ title, detail, isCompleted: false, createdAt, modifiedAt });
@@ -787,10 +830,15 @@ function collectWorkItems() {
     completedWorkItemsContainer.querySelectorAll('.work-item-container').forEach(container => {
         const titleInput = container.querySelector('.task-title-input');
         const detailInput = container.querySelector('.task-detail-input');
+        const createdHidden = container.querySelector('.task-created-at');
+        const modifiedHidden = container.querySelector('.task-modified-at');
+
         const title = titleInput ? titleInput.value.trim() : '';
         const detail = detailInput ? detailInput.value.trim() : '';
-        const createdAt = container.dataset.createdAt || new Date().toISOString();
-        const modifiedAt = container.dataset.modifiedAt || new Date().toISOString();
+        
+        // Prioritize hidden input, then dataset, then default to new date
+        const createdAt = (createdHidden ? createdHidden.value : null) || container.dataset.createdAt || new Date().toISOString();
+        const modifiedAt = (modifiedHidden ? modifiedHidden.value : null) || container.dataset.modifiedAt || new Date().toISOString();
 
         if (title || detail) {
             items.push({ title, detail, isCompleted: true, createdAt, modifiedAt });
