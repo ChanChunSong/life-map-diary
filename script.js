@@ -9,7 +9,7 @@ import { getFirestore, collection, doc, setDoc, query, orderBy, limit, onSnapsho
 // ----------------------------------------------------------------------------------
 // 🔥 PUBLIC CONFIGURATION REQUIRED FOR GITHUB PAGES (PLACE YOUR KEYS HERE) 🔥
 const PUBLIC_FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY_HERE",
+    apiKey: typeof FIREBASE_API_KEY_SECRET !== 'undefined' ? FIREBASE_API_KEY_SECRET : "YOUR_API_KEY_HERE",
     authDomain: "life-map-diary-logger.firebaseapp.com",
     projectId: "life-map-diary-logger",
     storageBucket: "life-map-diary-logger.firebasestorage.app",
