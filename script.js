@@ -1181,6 +1181,16 @@ function formatDateTime(dateString) {
                     event.preventDefault(); // Prevent the browser's default save action
                     window.saveDiaryEntry();
                 }
+                // Alt + Right Arrow OR Alt + n: Next Day
+                if (event.altKey && (event.key === 'ArrowRight' || event.key === 'n')) {
+                    event.preventDefault();
+                    window.goToNextDay();
+                }
+                // Alt + T: Today
+                if (event.altKey && event.key === 't') {
+                    event.preventDefault();
+                    window.goToToday();
+                }
             });
 
             // Floating Action Button (FAB) Logic
@@ -1188,6 +1198,8 @@ function formatDateTime(dateString) {
             const fabContainer = document.querySelector('.fab-container');
             const fabSaveButton = document.getElementById('fab-save-button');
             const fabCopyButton = document.getElementById('fab-copy-button');
+            const fabTodayButton = document.getElementById('fab-today-button');
+            const fabNextDayButton = document.getElementById('fab-next-day-button');
 
             fabMainButton.addEventListener('click', () => {
                 fabContainer.classList.toggle('open');
@@ -1210,6 +1222,20 @@ function formatDateTime(dateString) {
                 }
                 fabContainer.classList.remove('open'); // Close menu after action
             });
+
+            if (fabTodayButton) {
+                fabTodayButton.addEventListener('click', () => {
+                    window.goToToday();
+                    fabContainer.classList.remove('open');
+                });
+            }
+
+            if (fabNextDayButton) {
+                fabNextDayButton.addEventListener('click', () => {
+                    window.goToNextDay();
+                    fabContainer.classList.remove('open');
+                });
+            }
 
             // Floating Navigation Menu Logic
             const nav = document.getElementById('floating-nav');
