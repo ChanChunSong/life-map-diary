@@ -546,12 +546,15 @@ window.goToToday = function() {
     window.updateWeekday();
 }
 
-window.goToNextDay = function() {
+window.goToNextDay = async function() {
     const dateInput = document.getElementById('date-input');
     if (!dateInput.value) {
         window.goToToday(); // Fallback if empty
         return;
     }
+
+    // Auto-save current entry before moving
+    await window.saveDiaryEntry();
     
     const date = new Date(dateInput.value);
     // Add 1 day
@@ -560,13 +563,28 @@ window.goToNextDay = function() {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
-    dateInput.value = `${y}-${m}-${d}`;
+    const newDateStr = `${y}-${m}-${d}`;
+    dateInput.value = newDateStr;
     
     window.updateWeekday();
     
     // Automatically increment counts
     window.changeCount('consecutive-day-input', 1);
     window.changeCount('accumulated-count-input', 1);
+
+    // Update Dropdown to reflect the new date (current slot)
+    const dropdown = document.getElementById('history-dropdown');
+    
+    // If the new date exists in our loaded history, select it and load the data
+    if (loadedEntries[newDateStr]) {
+        loadEntryIntoForm(loadedEntries[newDateStr]);
+        dropdown.value = newDateStr;
+        setStatus(`Moved to next day: ${newDateStr}. Loaded existing entry.`, 'info');
+    } else {
+        // If it doesn't exist, we just reset the dropdown selection to blank (new entry)
+        dropdown.value = "";
+        setStatus(`Moved to next day: ${newDateStr}. Ready to log.`, 'info');
+    }
 }
 
 window.updateWeekday = function() {
@@ -1223,12 +1241,6 @@ function formatDateTime(dateString) {
                 fabContainer.classList.remove('open'); // Close menu after action
             });
 
-            if (fabTodayButton) {
-                fabTodayButton.addEventListener('click', () => {
-                    window.goToToday();
-                    fabContainer.classList.remove('open');
-                });
-            }
 
             if (fabNextDayButton) {
                 fabNextDayButton.addEventListener('click', () => {
